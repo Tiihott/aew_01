@@ -12,6 +12,7 @@
     <!-- indentation is intentionally broken -->
     <changelist>-SNAPSHOT</changelist>
     <java.version>25</java.version>
+    <log4j2.version>2.25.4</log4j2.version>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
     <metrics.version>4.2.0</metrics.version>
@@ -22,6 +23,26 @@
     <teragrep.rlp_03.version>10.0.0</teragrep.rlp_03.version>
   </properties>
   <dependencies>
+    <!-- tests -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.4.0-RC1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <version>1.4.0-RC1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>5.4.0-RC1</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- rlp_03 -->
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>rlp_03</artifactId>
@@ -51,6 +72,31 @@
       <version>2.0.1</version>
       <scope>test</scope>
     </dependency>
+    <!--  logging  -->
+    <!--  https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-slf4j2-impl  -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+      <version>${log4j2.version}</version>
+    </dependency>
+    <!--  https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core  -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>${log4j2.version}</version>
+    </dependency>
+    <!--  https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api  -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j2.version}</version>
+    </dependency>
+    <!--  https://mvnrepository.com/artifact/org.slf4j/slf4j-api  -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.17</version>
+    </dependency>
   </dependencies>
   <build>
     <directory>${project.basedir}/target</directory>
@@ -79,7 +125,7 @@
                   <version>3.2.5</version>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[11,12)</version>
+                  <version>[25,26)</version>
                 </requireJavaVersion>
                 <banDynamicVersions></banDynamicVersions>
                 <requirePluginVersions>
@@ -170,7 +216,7 @@
                   <owner>Suomen Kanuuna Oy</owner>
                   <start>2024</start>
                 </copyright>
-                <text>Example java project that uses mandatory plugins</text>
+                <text>RELP sink for Microsoft Azure EventHub (aew_01)</text>
               </all>
               <family>Teragrep</family>
             </license>
@@ -192,6 +238,7 @@
             <!-- maven -->
             <exclude>pom.xml</exclude>
             <exclude>eclipse-java-formatter.xml</exclude>
+            <exclude>.flattened-pom.xml</exclude>
             <!-- readme -->
             <exclude>README.adoc</exclude>
           </excludes>
@@ -234,9 +281,15 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
+        <!-- version information is required -->
+        <version>3.2.5</version>
         <configuration>
           <parallel>all</parallel>
           <useUnlimitedThreads>true</useUnlimitedThreads>
+          <environmentVariables>
+            <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
+            <DOCKER_HOST>unix://${XDG_RUNTIME_DIR}/podman/podman.sock</DOCKER_HOST>
+          </environmentVariables>
         </configuration>
       </plugin>
       <plugin>
