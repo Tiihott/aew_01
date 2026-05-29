@@ -241,6 +241,7 @@
             <exclude>.flattened-pom.xml</exclude>
             <!-- readme -->
             <exclude>README.adoc</exclude>
+            <exclude>src/test/resources/log4j2.xml</exclude>
           </excludes>
         </configuration>
         <executions>
