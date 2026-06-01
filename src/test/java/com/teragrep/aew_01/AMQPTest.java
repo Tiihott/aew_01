@@ -45,7 +45,12 @@
  */
 package com.teragrep.aew_01;
 
+import com.azure.core.util.IterableStream;
 import com.azure.messaging.eventhubs.EventData;
+import com.azure.messaging.eventhubs.EventHubClientBuilder;
+import com.azure.messaging.eventhubs.EventHubConsumerClient;
+import com.azure.messaging.eventhubs.models.EventPosition;
+import com.azure.messaging.eventhubs.models.PartitionEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +60,10 @@ import org.testcontainers.azure.EventHubsEmulatorContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.MountableFile;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 final class AMQPTest {
@@ -85,13 +93,39 @@ final class AMQPTest {
     }
 
     @Test
-    void test1() {
+    void testPublishEvents() {
         final String connectionString = eventHubs.getConnectionString();
         final String connectionStringWithEventHub = connectionString.concat("EntityPath=eh1");
 
+        // Create consumer client to assert that producer works as expected.
+        final EventHubConsumerClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildConsumerClient();
+
         final AMQP client = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1");
-        final List<EventData> allEvents = Arrays.asList(new EventData("Foo"), new EventData("Bar"));
+        final List<EventData> allEvents = Arrays.asList(new EventData("Test message one"), new EventData("Test message two"));
         client.publishEvents(allEvents);
+
+        final String partitionId = "0";
+        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
+        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
+        // Read events from partition '0' and returns the first 100 received or until the 30 seconds has elapsed.
+        final IterableStream<PartitionEvent> events = consumer
+                .receiveFromPartition(partitionId, 100, startingPosition, Duration.ofSeconds(30));
+
+        final Iterator<PartitionEvent> iterator = events.iterator();
+        Assertions.assertTrue(iterator.hasNext());
+        PartitionEvent first = iterator.next();
+        Assertions.assertEquals("Test message one", first.getData().getBodyAsString());
+        Assertions.assertTrue(iterator.hasNext());
+        PartitionEvent second = iterator.next();
+        Assertions.assertEquals("Test message two", second.getData().getBodyAsString());
+        Assertions.assertFalse(iterator.hasNext());
+
         client.close();
+        consumer.close();
     }
 }
