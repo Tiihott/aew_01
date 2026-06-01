@@ -1,6 +1,6 @@
 /*
  * RELP sink for Microsoft Azure EventHub (aew_01)
- * Copyright (C) 2021-2024 Suomen Kanuuna Oy
+ * Copyright (C) 2021-2026 Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
