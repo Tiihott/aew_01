@@ -106,7 +106,8 @@ final class AMQPTest {
                 .buildConsumerClient();
 
         final AMQP client = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1");
-        final List<EventData> allEvents = Arrays.asList(new EventData("Test message one"), new EventData("Test message two"));
+        final List<EventData> allEvents = Arrays
+                .asList(new EventData("Test message one"), new EventData("Test message two"));
         client.publishEvents(allEvents);
 
         final String partitionId = "0";
