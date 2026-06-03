@@ -45,10 +45,12 @@
  */
 package com.teragrep.aew_01;
 
+import com.azure.messaging.eventhubs.EventData;
 import com.teragrep.cnf_01.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 public class Main {
@@ -57,13 +59,23 @@ public class Main {
 
     // Start the server
     public static void main(String[] args) {
-        // load configs etc. and initialize RELP
+        // load configs etc. and initialize AMQP and RELP
         PropertiesConfiguration config = new PropertiesConfiguration();
         Map<String, String> configurationMap = config.asMap();
-        RELP relp = new RELP(
-                configurationMap,
-                frameContext -> LOGGER.info(frameContext.relpFrame().payload().toString())
+        final AMQP amqpClient = new AMQP(
+                configurationMap.get("connectionStringWithEventHub"),
+                configurationMap.get("eventHubName"),
+                configurationMap.get("fullyQualifiedNamespace")
         );
-        relp.run();
+        try (
+                RELP relp = new RELP(
+                        configurationMap,
+                        frameContext -> amqpClient
+                                .publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())))
+                )
+        ) {
+            relp.run();
+        }
+        amqpClient.close();
     }
 }
