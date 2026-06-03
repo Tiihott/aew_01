@@ -60,7 +60,10 @@ public class Main {
         // load configs etc. and initialize RELP
         PropertiesConfiguration config = new PropertiesConfiguration();
         Map<String, String> configurationMap = config.asMap();
-        RELP relp = new RELP(configurationMap);
+        RELP relp = new RELP(
+                configurationMap,
+                frameContext -> LOGGER.info(frameContext.relpFrame().payload().toString())
+        );
         relp.run();
     }
 }

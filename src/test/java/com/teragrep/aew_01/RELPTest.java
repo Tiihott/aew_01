@@ -50,6 +50,8 @@ import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpConnection;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -57,16 +59,22 @@ import java.util.Properties;
 
 class RELPTest {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RELPTest.class);
+
     @Test
     void testRun() {
         final Properties testProperties = new Properties();
         testProperties.put("port", "1601");
         testProperties.put("tls", "false");
         testProperties.put("tlsKeystorePassword", "changeit");
+        testProperties.put("tlsTruststorePassword", "changeit");
         final PropertiesConfiguration config = new PropertiesConfiguration(testProperties);
         final Map<String, String> configurationMap = config.asMap();
 
-        final RELP relp = new RELP(configurationMap);
+        final RELP relp = new RELP(
+                configurationMap,
+                frameContext -> LOGGER.info(frameContext.relpFrame().payload().toString())
+        );
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start

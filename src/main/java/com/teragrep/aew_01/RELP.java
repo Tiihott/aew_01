@@ -79,18 +79,19 @@ public final class RELP implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RELP.class);
 
-    private static final Consumer<FrameContext> syslogConsumer = frameContext -> LOGGER
-            .info(frameContext.relpFrame().payload().toString());
-    private static final Supplier<FrameDelegate> frameDelegateSupplier = () -> {
-        LOGGER.debug("Providing frameDelegate for a connection");
-        return new DefaultFrameDelegate(syslogConsumer);
-    };
+    // The syslogConsumer will be responsible for passing on the relp payloads to the AMQP. Currently, logger is used.
+    private final Supplier<FrameDelegate> frameDelegateSupplier;
     private static final EventLoopFactory eventLoopFactory = new EventLoopFactory();
 
     private final Map<String, String> configurationMap;
 
-    public RELP(Map<String, String> configurationMap) {
+    public RELP(Map<String, String> configurationMap, Consumer<FrameContext> syslogConsumer) {
         this.configurationMap = configurationMap;
+        // frameContext -> LOGGER.info(frameContext.relpFrame().payload().toString());
+        this.frameDelegateSupplier = () -> {
+            LOGGER.debug("Providing frameDelegate for a connection");
+            return new DefaultFrameDelegate(syslogConsumer);
+        };
     }
 
     @Override
