@@ -144,13 +144,14 @@ public class IntegrationTest {
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
+        amqpClient.close();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
         final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
         // Read events from partition '0' and returns the first 100 received or until the 30 seconds has elapsed.
         final IterableStream<PartitionEvent> events = eventHubConsumerClient
-                .receiveFromPartition(partitionId, 100, startingPosition, Duration.ofSeconds(30));
+                .receiveFromPartition(partitionId, 100, startingPosition, Duration.ofSeconds(10));
 
         final Iterator<PartitionEvent> iterator = events.iterator();
         Assertions.assertTrue(iterator.hasNext());
