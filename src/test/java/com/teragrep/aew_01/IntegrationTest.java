@@ -143,7 +143,7 @@ public class IntegrationTest {
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         Assertions.assertAll(relpConnection::disconnect);
-        relpThread.interrupt();
+        relp.close();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));

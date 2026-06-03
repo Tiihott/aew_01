@@ -89,6 +89,6 @@ class RELPTest {
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         Assertions.assertAll(relpConnection::disconnect);
-        relpThread.interrupt();
+        relp.close();
     }
 }

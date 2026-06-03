@@ -75,13 +75,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public final class RELP implements Runnable {
+public final class RELP implements Runnable, AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RELP.class);
 
+    private final ExecutorService executorService = Executors.newFixedThreadPool(1);
+    private final EventLoop eventLoop;
+    private final Thread eventLoopThread;
+
     // The syslogConsumer will be responsible for passing on the relp payloads to the AMQP. Currently, logger is used.
     private final Supplier<FrameDelegate> frameDelegateSupplier;
-    private static final EventLoopFactory eventLoopFactory = new EventLoopFactory();
+    private final EventLoopFactory eventLoopFactory = new EventLoopFactory();
 
     private final Map<String, String> configurationMap;
 
@@ -92,20 +96,17 @@ public final class RELP implements Runnable {
             LOGGER.debug("Providing frameDelegate for a connection");
             return new DefaultFrameDelegate(syslogConsumer);
         };
-    }
-
-    @Override
-    public void run() {
-        final ExecutorService executorService = Executors.newFixedThreadPool(1);
-        final EventLoop eventLoop;
         try {
             eventLoop = eventLoopFactory.create();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
         }
+        eventLoopThread = new Thread(eventLoop);
+    }
 
-        final Thread eventLoopThread = new Thread(eventLoop);
+    @Override
+    public void run() {
 
         eventLoopThread.start();
 
@@ -150,17 +151,6 @@ public final class RELP implements Runnable {
             catch (InterruptedException e) {
                 LOGGER.debug("Interruption in main thread latch.await(), retrying", e);
             }
-        eventLoop.stop();
-        try {
-            eventLoopThread.join();
-        }
-        catch (InterruptedException interruptedException) {
-            throw new RuntimeException(interruptedException);
-        }
-
-        LOGGER.debug("Server stopped at port <[{}]>", configurationMap.get("port"));
-
-        executorService.shutdown();
     }
 
     private TLSFactory tlsServer() {
@@ -207,5 +197,18 @@ public final class RELP implements Runnable {
         };
 
         return new TLSFactory(sslContext, sslEngineFunction);
+    }
+
+    @Override
+    public void close() {
+        eventLoop.stop();
+        try {
+            eventLoopThread.join();
+        }
+        catch (InterruptedException interruptedException) {
+            throw new RuntimeException(interruptedException);
+        }
+        LOGGER.debug("Server stopped at port <[{}]>", configurationMap.get("port"));
+        executorService.shutdown();
     }
 }
