@@ -51,6 +51,8 @@ import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerClient;
 import com.azure.messaging.eventhubs.models.EventPosition;
 import com.azure.messaging.eventhubs.models.PartitionEvent;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,8 +106,9 @@ final class AMQPTest {
                 .eventHubName("eh1")
                 .consumerGroup("cg1")
                 .buildConsumerClient();
-
-        final AMQP client = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1");
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final AMQP client = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1", amqpMeter);
         final List<EventData> allEvents = Arrays
                 .asList(new EventData("Test message one"), new EventData("Test message two"));
         client.publishEvents(allEvents);
@@ -125,6 +128,7 @@ final class AMQPTest {
         PartitionEvent second = iterator.next();
         Assertions.assertEquals("Test message two", second.getData().getBodyAsString());
         Assertions.assertFalse(iterator.hasNext());
+        Assertions.assertEquals(2, amqpMeter.getCount());
 
         client.close();
         consumer.close();

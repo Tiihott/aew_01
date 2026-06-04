@@ -45,6 +45,8 @@
  */
 package com.teragrep.aew_01;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.teragrep.cnf_01.PropertiesConfiguration;
 import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpConnection;
@@ -63,6 +65,8 @@ class RELPTest {
 
     @Test
     void testRun() {
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter relpMeter = metricRegistry.meter("relpMeter");
         final Properties testProperties = new Properties();
         testProperties.put("port", "1601");
         testProperties.put("tls", "false");
@@ -71,10 +75,10 @@ class RELPTest {
         final PropertiesConfiguration config = new PropertiesConfiguration(testProperties);
         final Map<String, String> configurationMap = config.asMap();
 
-        final RELP relp = new RELP(
-                configurationMap,
-                frameContext -> LOGGER.info(frameContext.relpFrame().payload().toString())
-        );
+        final RELP relp = new RELP(configurationMap, frameContext -> {
+            LOGGER.info(frameContext.relpFrame().payload().toString());
+            relpMeter.mark();
+        });
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start
@@ -89,6 +93,7 @@ class RELPTest {
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         Assertions.assertAll(relpConnection::disconnect);
+        Assertions.assertEquals(1, relpMeter.getCount());
         relp.close();
     }
 }

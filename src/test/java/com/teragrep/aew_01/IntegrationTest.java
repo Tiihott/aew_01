@@ -51,6 +51,8 @@ import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerClient;
 import com.azure.messaging.eventhubs.models.EventPosition;
 import com.azure.messaging.eventhubs.models.PartitionEvent;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.teragrep.cnf_01.PropertiesConfiguration;
 import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpConnection;
@@ -121,8 +123,9 @@ public class IntegrationTest {
         testProperties.put("tlsTruststorePassword", "changeit");
         final PropertiesConfiguration config = new PropertiesConfiguration(testProperties);
         final Map<String, String> configurationMap = config.asMap();
-
-        final AMQP amqpClient = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1");
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final AMQP amqpClient = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1", amqpMeter);
 
         final RELP relp = new RELP(
                 configurationMap,
@@ -158,6 +161,7 @@ public class IntegrationTest {
         PartitionEvent first = iterator.next();
         Assertions.assertEquals("Hello World!", first.getData().getBodyAsString());
         Assertions.assertFalse(iterator.hasNext());
+        Assertions.assertEquals(1, amqpMeter.getCount());
         eventHubConsumerClient.close();
     }
 }

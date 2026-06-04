@@ -46,6 +46,8 @@
 package com.teragrep.aew_01;
 
 import com.azure.messaging.eventhubs.EventData;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.teragrep.cnf_01.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,21 +61,22 @@ public class Main {
 
     // Start the server
     public static void main(String[] args) {
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter relpMeter = metricRegistry.meter("relpMeter");
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
         // load configs etc. and initialize AMQP and RELP
         PropertiesConfiguration config = new PropertiesConfiguration();
         Map<String, String> configurationMap = config.asMap();
         final AMQP amqpClient = new AMQP(
                 configurationMap.get("connectionStringWithEventHub"),
                 configurationMap.get("eventHubName"),
-                configurationMap.get("fullyQualifiedNamespace")
+                configurationMap.get("fullyQualifiedNamespace"),
+                amqpMeter
         );
-        try (
-                RELP relp = new RELP(
-                        configurationMap,
-                        frameContext -> amqpClient
-                                .publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())))
-                )
-        ) {
+        try (RELP relp = new RELP(configurationMap, frameContext -> {
+            amqpClient.publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())));
+            relpMeter.mark();
+        })) {
             relp.run();
         }
         amqpClient.close();

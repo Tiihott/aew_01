@@ -46,6 +46,7 @@
 package com.teragrep.aew_01;
 
 import com.azure.messaging.eventhubs.*;
+import com.codahale.metrics.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +55,19 @@ import java.util.List;
 public final class AMQP {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQP.class);
+    private final Meter amqpMeter;
+
     private final String fullyQualifiedNamespace;
     private final String eventHubName;
     private final EventHubProducerClient producerClient;
 
-    public AMQP(final String connectionString, final String eventHubName, final String fullyQualifiedNamespace) {
+    public AMQP(
+            final String connectionString,
+            final String eventHubName,
+            final String fullyQualifiedNamespace,
+            Meter meter
+    ) {
+        this.amqpMeter = meter;
         this.eventHubName = eventHubName;
         this.fullyQualifiedNamespace = fullyQualifiedNamespace;
         this.producerClient = new EventHubClientBuilder()
@@ -114,6 +123,7 @@ public final class AMQP {
         }
 
         LOGGER.info("Event batch sent successfully");
+        amqpMeter.mark(allEvents.size());
     }
 
     public void close() {
