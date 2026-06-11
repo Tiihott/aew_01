@@ -43,47 +43,9 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.aew_01;
+package com.teragrep.aew_01.config.source;
 
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.RelpConnection;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public interface Sourceable {
 
-import java.nio.charset.StandardCharsets;
-
-class RELPTest {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(RELPTest.class);
-
-    @Test
-    void testRun() {
-        MetricRegistry metricRegistry = new MetricRegistry();
-        Meter relpMeter = metricRegistry.meter("relpMeter");
-
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
-            LOGGER.info(frameContext.relpFrame().payload().toString());
-            relpMeter.mark();
-        });
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
-        // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send message to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
-        final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
-        final RelpBatch relpBatch = new RelpBatch();
-        long reqId = relpBatch.insert("Hello World!".getBytes(StandardCharsets.UTF_8));
-        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        // verify successful transaction
-        Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
-        Assertions.assertAll(relpConnection::disconnect);
-        Assertions.assertEquals(1, relpMeter.getCount());
-        relp.close();
-    }
+    public abstract String source(String name, String defaultValue);
 }

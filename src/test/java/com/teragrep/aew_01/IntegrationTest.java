@@ -53,7 +53,6 @@ import com.azure.messaging.eventhubs.models.EventPosition;
 import com.azure.messaging.eventhubs.models.PartitionEvent;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.teragrep.cnf_01.PropertiesConfiguration;
 import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpConnection;
 import org.junit.jupiter.api.AfterEach;
@@ -72,8 +71,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 public class IntegrationTest {
 
@@ -116,19 +113,15 @@ public class IntegrationTest {
                 .consumerGroup("cg1")
                 .buildConsumerClient();
 
-        final Properties testProperties = new Properties();
-        testProperties.put("port", "1601");
-        testProperties.put("tls", "false");
-        testProperties.put("tlsKeystorePassword", "changeit");
-        testProperties.put("tlsTruststorePassword", "changeit");
-        final PropertiesConfiguration config = new PropertiesConfiguration(testProperties);
-        final Map<String, String> configurationMap = config.asMap();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final AMQP amqpClient = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1", amqpMeter);
 
         final RELP relp = new RELP(
-                configurationMap,
+                "false",
+                "1601",
+                "changeit",
+                "changeit",
                 frameContext -> amqpClient
                         .publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())))
         );

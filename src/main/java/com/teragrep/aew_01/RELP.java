@@ -67,7 +67,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -87,11 +86,22 @@ public final class RELP implements Runnable, AutoCloseable {
     private final Supplier<FrameDelegate> frameDelegateSupplier;
     private final EventLoopFactory eventLoopFactory = new EventLoopFactory();
 
-    private final Map<String, String> configurationMap;
+    final String tls;
+    final String port;
+    final String tlsKeystore;
+    final String tlsKeystorePassword;
 
-    public RELP(Map<String, String> configurationMap, Consumer<FrameContext> syslogConsumer) {
-        this.configurationMap = configurationMap;
-        // frameContext -> LOGGER.info(frameContext.relpFrame().payload().toString());
+    public RELP(
+            final String tls,
+            final String port,
+            final String tlsKeystore,
+            final String tlsKeystorePassword,
+            Consumer<FrameContext> syslogConsumer
+    ) {
+        this.tls = tls;
+        this.port = port;
+        this.tlsKeystore = tlsKeystore;
+        this.tlsKeystorePassword = tlsKeystorePassword;
         this.frameDelegateSupplier = () -> {
             LOGGER.debug("Providing frameDelegate for a connection");
             return new DefaultFrameDelegate(syslogConsumer);
@@ -112,11 +122,11 @@ public final class RELP implements Runnable, AutoCloseable {
 
         final SocketFactory socketFactory;
 
-        if (Boolean.parseBoolean(configurationMap.getOrDefault("tls", "false"))) {
+        if (Boolean.parseBoolean(tls)) {
             socketFactory = tlsServer();
         }
         else {
-            LOGGER.debug("Starting plain server on port <[{}]>", configurationMap.get("port"));
+            LOGGER.debug("Starting plain server on port <[{}]>", port);
             socketFactory = new PlainFactory();
         }
 
@@ -128,7 +138,7 @@ public final class RELP implements Runnable, AutoCloseable {
         );
 
         try {
-            serverFactory.create(Integer.parseInt(configurationMap.get("port")));
+            serverFactory.create(Integer.parseInt(port));
         }
         catch (IOException e) {
             LOGGER.error("Failed to run: <[{}]>", e.getMessage(), e);
@@ -138,7 +148,7 @@ public final class RELP implements Runnable, AutoCloseable {
         final CountDownLatch latch = new CountDownLatch(1);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOGGER.debug("Stopping server at port <[{}]>", configurationMap.get("port"));
+            LOGGER.debug("Stopping server at port <[{}]>", port);
 
             latch.countDown();
         }));
@@ -154,14 +164,14 @@ public final class RELP implements Runnable, AutoCloseable {
     }
 
     private TLSFactory tlsServer() {
-        LOGGER.debug("Starting TLS server on port <[{}]>", configurationMap.get("port"));
+        LOGGER.debug("Starting TLS server on port <[{}]>", port);
 
         final InputStream keystoreStream;
-        if (configurationMap.get("tlsKeystore") != null) {
+        if (tlsKeystore != null) {
             LOGGER.debug("Using user supplied keystore");
-            Path path = Paths.get(configurationMap.get("tlsKeystore"));
+            Path path = Paths.get(tlsKeystore);
             if (!path.toFile().exists()) {
-                throw new RuntimeException("File " + configurationMap.get("tlsKeystore") + " doesn't exist");
+                throw new RuntimeException("File " + tlsKeystore + " doesn't exist");
             }
             try {
                 keystoreStream = Files.newInputStream(path);
@@ -178,10 +188,7 @@ public final class RELP implements Runnable, AutoCloseable {
 
         SSLContext sslContext;
         try {
-            sslContext = TLSContextFactory
-                    .authenticatedContext(
-                            keystoreStream, configurationMap.getOrDefault("tlsKeystorePassword", "changeit"), "TLSv1.3"
-                    );
+            sslContext = TLSContextFactory.authenticatedContext(keystoreStream, tlsKeystorePassword, "TLSv1.3");
         }
         catch (GeneralSecurityException e) {
             throw new RuntimeException("Can't create sslContext: " + e);
@@ -208,7 +215,7 @@ public final class RELP implements Runnable, AutoCloseable {
         catch (InterruptedException interruptedException) {
             throw new RuntimeException(interruptedException);
         }
-        LOGGER.debug("Server stopped at port <[{}]>", configurationMap.get("port"));
+        LOGGER.debug("Server stopped at port <[{}]>", port);
         executorService.shutdown();
     }
 }

@@ -48,12 +48,14 @@ package com.teragrep.aew_01;
 import com.azure.messaging.eventhubs.EventData;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.teragrep.cnf_01.PropertiesConfiguration;
+import com.teragrep.aew_01.config.AmqpConfig;
+import com.teragrep.aew_01.config.RelpConfig;
+import com.teragrep.aew_01.config.source.EnvironmentSource;
+import com.teragrep.aew_01.config.source.Sourceable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Map;
 
 public class Main {
 
@@ -61,24 +63,41 @@ public class Main {
 
     // Start the server
     public static void main(String[] args) {
-        MetricRegistry metricRegistry = new MetricRegistry();
+        final MetricRegistry metricRegistry = new MetricRegistry();
+        final Sourceable configSource = getConfigSource();
         Meter relpMeter = metricRegistry.meter("relpMeter");
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         // load configs etc. and initialize AMQP and RELP
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        Map<String, String> configurationMap = config.asMap();
         final AMQP amqpClient = new AMQP(
-                configurationMap.get("connectionStringWithEventHub"),
-                configurationMap.get("eventHubName"),
-                configurationMap.get("fullyQualifiedNamespace"),
+                new AmqpConfig(configSource).connectionStringWithEventHub(),
+                new AmqpConfig(configSource).eventHubName(),
+                new AmqpConfig(configSource).namespaceName(),
                 amqpMeter
         );
-        try (RELP relp = new RELP(configurationMap, frameContext -> {
-            amqpClient.publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())));
-            relpMeter.mark();
-        })) {
+        try (
+                RELP relp = new RELP(new RelpConfig(configSource).tls(), new RelpConfig(configSource).port(), new RelpConfig(configSource).tlsTruststorePassword(), new RelpConfig(configSource).tlsKeystorePassword(), frameContext -> {
+                    amqpClient.publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())));
+                    relpMeter.mark();
+                })
+        ) {
             relp.run();
         }
         amqpClient.close();
+    }
+
+    private static Sourceable getConfigSource() {
+        LOGGER.info("Getting config source...");
+        final String type = System.getProperty("config.source", "properties");
+
+        final Sourceable rv;
+        if ("environment".equals(type)) {
+            LOGGER.info("Config source set to environment.");
+            rv = new EnvironmentSource();
+        }
+        else {
+            throw new IllegalArgumentException("config.source not within supported types: [environment]");
+        }
+
+        return rv;
     }
 }
