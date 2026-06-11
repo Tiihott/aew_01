@@ -87,7 +87,7 @@ public class Main {
 
     private static Sourceable getConfigSource() {
         LOGGER.info("Getting config source...");
-        final String type = System.getProperty("config.source", "properties");
+        final String type = System.getProperty("config.source", "environment");
 
         final Sourceable rv;
         if ("environment".equals(type)) {
