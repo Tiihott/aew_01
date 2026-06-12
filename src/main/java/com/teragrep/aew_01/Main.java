@@ -48,14 +48,24 @@ package com.teragrep.aew_01;
 import com.azure.messaging.eventhubs.EventData;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Slf4jReporter;
+import com.codahale.metrics.jmx.JmxReporter;
 import com.teragrep.aew_01.config.AmqpConfig;
+import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
 import com.teragrep.aew_01.config.source.EnvironmentSource;
 import com.teragrep.aew_01.config.source.Sourceable;
+import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet;
+import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
@@ -67,6 +77,23 @@ public class Main {
         final Sourceable configSource = getConfigSource();
         Meter relpMeter = metricRegistry.meter("relpMeter");
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
+
+        final JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
+        final Slf4jReporter slf4jReporter = Slf4jReporter
+                .forRegistry(metricRegistry)
+                .outputTo(LoggerFactory.getLogger(RELP.class))
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
+        final int prometheusPort = new MetricsConfig(configSource).prometheusPort();
+        final Server jettyServer = new Server(prometheusPort);
+        try {
+            startMetrics(jmxReporter, slf4jReporter, metricRegistry, jettyServer);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         // load configs etc. and initialize AMQP and RELP
         final AMQP amqpClient = new AMQP(
                 new AmqpConfig(configSource).connectionStringWithEventHub(),
@@ -83,6 +110,31 @@ public class Main {
             relp.run();
         }
         amqpClient.close();
+    }
+
+    private static void startMetrics(
+            JmxReporter jmxReporter,
+            Slf4jReporter slf4jReporter,
+            MetricRegistry metricRegistry,
+            Server jettyServer
+    ) throws Exception {
+        LOGGER.info("Starting metrics for RELP sink for Microsoft Azure EventHub...");
+        jmxReporter.start();
+        slf4jReporter.start(1, TimeUnit.MINUTES);
+
+        // prometheus-exporter
+        PrometheusRegistry.defaultRegistry.register(new DropwizardExports(metricRegistry));
+
+        final ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        jettyServer.setHandler(context);
+
+        final PrometheusMetricsServlet metricsServlet = new PrometheusMetricsServlet();
+        final ServletHolder servletHolder = new ServletHolder(metricsServlet);
+        context.addServlet(servletHolder, "/metrics");
+
+        jettyServer.start();
+        LOGGER.info("Metrics started for RELP sink for Microsoft Azure EventHub.");
     }
 
     private static Sourceable getConfigSource() {
