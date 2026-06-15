@@ -45,6 +45,7 @@
  */
 package com.teragrep.aew_01;
 
+import com.azure.core.credential.TokenCredential;
 import com.azure.messaging.eventhubs.*;
 import com.codahale.metrics.Meter;
 import org.slf4j.Logger;
@@ -61,6 +62,7 @@ public final class AMQP {
     private final String eventHubName;
     private final EventHubProducerClient producerClient;
 
+    // Connection using connectionString
     public AMQP(
             final String connectionString,
             final String eventHubName,
@@ -74,6 +76,23 @@ public final class AMQP {
                 .connectionString(connectionString)
                 .fullyQualifiedNamespace(fullyQualifiedNamespace)
                 .eventHubName(eventHubName)
+                .buildProducerClient();
+    }
+
+    // Connection using TokenCredential
+    public AMQP(
+            final TokenCredential credential,
+            final String eventHubName,
+            final String fullyQualifiedNamespace,
+            Meter meter
+    ) {
+        this.amqpMeter = meter;
+        this.eventHubName = eventHubName;
+        this.fullyQualifiedNamespace = fullyQualifiedNamespace;
+        this.producerClient = new EventHubClientBuilder()
+                .fullyQualifiedNamespace(fullyQualifiedNamespace)
+                .eventHubName(eventHubName)
+                .credential(credential)
                 .buildProducerClient();
     }
 

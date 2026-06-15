@@ -45,6 +45,8 @@
  */
 package com.teragrep.aew_01;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.identity.ManagedIdentityCredentialBuilder;
 import com.azure.messaging.eventhubs.EventData;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
@@ -95,8 +97,15 @@ public class Main {
         }
 
         // load configs etc. and initialize AMQP and RELP
+        // create credentials using the ManagedIdentityCredentialBuilder
+        LOGGER.info("Building EventHub credentials...");
+        final TokenCredential credential = new ManagedIdentityCredentialBuilder()
+                .clientId(new AmqpConfig(configSource).userManagedIdentityClientId())
+                .build();
+        LOGGER.debug("EventHub credentials built successfully");
+
         final AMQP amqpClient = new AMQP(
-                new AmqpConfig(configSource).connectionStringWithEventHub(),
+                credential,
                 new AmqpConfig(configSource).eventHubName(),
                 new AmqpConfig(configSource).namespaceName(),
                 amqpMeter
