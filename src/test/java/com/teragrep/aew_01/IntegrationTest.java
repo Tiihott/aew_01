@@ -103,7 +103,6 @@ public class IntegrationTest {
     @Test
     void testRelpAndAmqp() {
         final String connectionString = eventHubs.getConnectionString();
-        final String connectionStringWithEventHub = connectionString.concat("EntityPath=eh1");
 
         // Create consumer client to assert that producer works as expected.
         final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
@@ -115,7 +114,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1", amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP(
                 "false",

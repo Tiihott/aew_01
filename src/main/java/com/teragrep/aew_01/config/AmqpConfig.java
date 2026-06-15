@@ -63,7 +63,12 @@ public final class AmqpConfig {
         );
     }
 
-    public AmqpConfig(String eventHubName, String fullyQualifiedNamespace, String connectionStringWithEventHub, String userManagedIdentityClientId) {
+    public AmqpConfig(
+            String eventHubName,
+            String fullyQualifiedNamespace,
+            String connectionStringWithEventHub,
+            String userManagedIdentityClientId
+    ) {
         this.eventHubName = eventHubName;
         this.fullyQualifiedNamespace = fullyQualifiedNamespace;
         this.connectionStringWithEventHub = connectionStringWithEventHub;

@@ -45,7 +45,9 @@
  */
 package com.teragrep.aew_01;
 
+import com.azure.core.credential.TokenCredential;
 import com.azure.core.util.IterableStream;
+import com.azure.identity.ManagedIdentityCredentialBuilder;
 import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerClient;
@@ -53,10 +55,7 @@ import com.azure.messaging.eventhubs.models.EventPosition;
 import com.azure.messaging.eventhubs.models.PartitionEvent;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.testcontainers.azure.AzuriteContainer;
 import org.testcontainers.azure.EventHubsEmulatorContainer;
 import org.testcontainers.containers.Network;
@@ -97,7 +96,6 @@ final class AMQPTest {
     @Test
     void testPublishEvents() {
         final String connectionString = eventHubs.getConnectionString();
-        final String connectionStringWithEventHub = connectionString.concat("EntityPath=eh1");
 
         // Create consumer client to assert that producer works as expected.
         final EventHubConsumerClient consumer = new EventHubClientBuilder()
@@ -108,7 +106,7 @@ final class AMQPTest {
                 .buildConsumerClient();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = new AMQP(connectionStringWithEventHub, "eh1", "emulatorNs1", amqpMeter);
+        final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
         final List<EventData> allEvents = Arrays
                 .asList(new EventData("Test message one"), new EventData("Test message two"));
         client.publishEvents(allEvents);
@@ -132,5 +130,15 @@ final class AMQPTest {
 
         client.close();
         consumer.close();
+    }
+
+    @Test
+    void testAmqpWithCredential() {
+        final TokenCredential credential = new ManagedIdentityCredentialBuilder().clientId("testClientId").build();
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final AMQP client = Assertions.assertDoesNotThrow(() -> new AMQP(credential, "eh1", "emulatorNs1", amqpMeter));
+        // .publishEvents() is not supported by the EventHub Emulator when the client has been built using TokenCredential.
+        client.close();
     }
 }

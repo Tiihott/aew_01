@@ -57,25 +57,18 @@ public final class AMQP {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQP.class);
     private final Meter amqpMeter;
-
-    private final String fullyQualifiedNamespace;
-    private final String eventHubName;
     private final EventHubProducerClient producerClient;
 
     // Connection using connectionString
-    public AMQP(
-            final String connectionString,
-            final String eventHubName,
-            final String fullyQualifiedNamespace,
-            Meter meter
-    ) {
+    public AMQP(final String connectionString, final String eventHubName, Meter meter) {
         this.amqpMeter = meter;
-        this.eventHubName = eventHubName;
-        this.fullyQualifiedNamespace = fullyQualifiedNamespace;
+        LOGGER
+                .debug(
+                        "Creating an EventHubProducerClient with Event Hub name <[{}]> and connection string <[{}]>",
+                        eventHubName, connectionString
+                );
         this.producerClient = new EventHubClientBuilder()
-                .connectionString(connectionString)
-                .fullyQualifiedNamespace(fullyQualifiedNamespace)
-                .eventHubName(eventHubName)
+                .connectionString(connectionString, eventHubName)
                 .buildProducerClient();
     }
 
@@ -87,8 +80,11 @@ public final class AMQP {
             Meter meter
     ) {
         this.amqpMeter = meter;
-        this.eventHubName = eventHubName;
-        this.fullyQualifiedNamespace = fullyQualifiedNamespace;
+        LOGGER
+                .debug(
+                        "Creating an EventHubProducerClient with namespace <[{}]> and Event Hub name <[{}]>",
+                        fullyQualifiedNamespace, eventHubName
+                );
         this.producerClient = new EventHubClientBuilder()
                 .fullyQualifiedNamespace(fullyQualifiedNamespace)
                 .eventHubName(eventHubName)
@@ -102,19 +98,6 @@ public final class AMQP {
      * @throws IllegalArgumentException if the EventData is bigger than the max batch size.
      */
     public void publishEvents(final List<EventData> allEvents) {
-        // create a token using the default Azure credential
-        // TODO: Switch to ManagedIdentityCredentialBuilder after test container is tested, see: https://github.com/teragrep/aer_01/issues/42
-        //        LOGGER.debug("Building AzureCredentials...");
-        //        final DefaultAzureCredential credential = new DefaultAzureCredentialBuilder()
-        //                .authorityHost(AzureAuthorityHosts.AZURE_PUBLIC_CLOUD)
-        //                .build();
-        //        LOGGER.debug("AzureCredentials built successfully");
-
-        LOGGER
-                .debug(
-                        "Creating an EventHubProducerClient with namespace <[{}]> and Event Hub name <[{}]>",
-                        fullyQualifiedNamespace, eventHubName
-                );
 
         LOGGER.info("Publishing events to Event Hub with <{}> events", allEvents.size());
         // create a batch
