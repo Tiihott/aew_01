@@ -1,0 +1,47 @@
+name: Build and upload GHCR container
+
+on:
+  workflow_run:
+    workflows: ["Upload Artifact as GitHub Release Attachment"]
+    types: [completed]
+
+jobs:
+  upload_container:
+    name: Upload Container
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifact
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: rpm
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2.5.0
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase repository name
+        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: 'Build Image'
+        run: |
+          docker buildx build --output type=docker --tag ghcr.io/${{ env.REPO_LC }}/app:${{ github.event.workflow_run.head_branch }} --tag ghcr.io/${{ env.REPO_LC }}/app:latest  .
+          docker push ghcr.io/${{ env.REPO_LC }}/app --all-tags
