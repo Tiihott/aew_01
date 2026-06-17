@@ -51,14 +51,14 @@ public final class AmqpConfig {
 
     private final String fullyQualifiedNamespace;
     private final String eventHubName;
-    private final String connectionStringWithEventHub;
+    private final String connectionString;
     private final String clientId;
 
     public AmqpConfig(final Sourceable configSource) {
         this(
                 configSource.source("azure.namespace", "<NAMESPACE NAME>"),
                 configSource.source("azure.eventhub", "<EVENT HUB NAME>"),
-                configSource.source("azure.connectionStringWithEventHub", "<CONNECTION STRING>"),
+                configSource.source("azure.connectionString", "<CONNECTION STRING>"),
                 configSource.source("azure.userManagedIdentityClientId", "<USER MANAGED IDENTITY ID>")
         );
     }
@@ -66,12 +66,12 @@ public final class AmqpConfig {
     public AmqpConfig(
             String eventHubName,
             String fullyQualifiedNamespace,
-            String connectionStringWithEventHub,
+            String connectionString,
             String userManagedIdentityClientId
     ) {
         this.eventHubName = eventHubName;
         this.fullyQualifiedNamespace = fullyQualifiedNamespace;
-        this.connectionStringWithEventHub = connectionStringWithEventHub;
+        this.connectionString = connectionString;
         this.clientId = userManagedIdentityClientId;
     }
 
@@ -83,8 +83,8 @@ public final class AmqpConfig {
         return eventHubName;
     }
 
-    public String connectionStringWithEventHub() {
-        return connectionStringWithEventHub;
+    public String connectionString() {
+        return connectionString;
     }
 
     public String userManagedIdentityClientId() {
