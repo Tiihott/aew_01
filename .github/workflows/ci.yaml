@@ -1,0 +1,26 @@
+name: CI
+
+on: [ push ]
+
+jobs:
+  upload:
+    name: CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Cache Local Maven Repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: 25
+          distribution: 'adopt'
+
+      - name: Run CI
+        run: mvn -Dsha1= --batch-mode clean verify
