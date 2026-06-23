@@ -17,7 +17,6 @@
     <maven.compiler.target>25</maven.compiler.target>
     <metrics.version>4.2.38</metrics.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <prometheus.version>1.6.1</prometheus.version>
     <revision>0.0.1</revision>
     <sha1></sha1>
@@ -139,7 +138,7 @@
     <finalName>aew_01</finalName>
     <resources>
       <resource>
-        <filtering>true</filtering>
+        <filtering>false</filtering>
         <directory>src/main/resources</directory>
       </resource>
     </resources>
