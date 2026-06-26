@@ -163,12 +163,10 @@ final class AMQPTest {
 
         final Iterator<PartitionEvent> iterator = events.iterator();
         Assertions.assertTrue(iterator.hasNext());
-        int i = 1;
         final List<EventData> resultEvents = new ArrayList<>();
         while (iterator.hasNext()) {
             PartitionEvent event = iterator.next();
             resultEvents.add(event.getData());
-            i++;
         }
         Assertions.assertEquals(1000, amqpMeter.getCount());
         Assertions.assertEquals(expectedEvents, resultEvents);
