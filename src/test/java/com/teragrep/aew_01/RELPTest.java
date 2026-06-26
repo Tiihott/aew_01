@@ -55,6 +55,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 class RELPTest {
 
@@ -84,6 +86,39 @@ class RELPTest {
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         Assertions.assertAll(relpConnection::disconnect);
         Assertions.assertEquals(1, relpMeter.getCount());
+        relp.close();
+    }
+
+    @Test
+    void testRunLargeBatch() {
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter relpMeter = metricRegistry.meter("relpMeter");
+
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
+            LOGGER.info(frameContext.relpFrame().payload().toString());
+            relpMeter.mark();
+        });
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send message to the RELP server.
+        final RelpConnection relpConnection = new RelpConnection();
+        final int port = 1601;
+        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        final RelpBatch relpBatch = new RelpBatch();
+        List<Long> reqIds = new ArrayList<>();
+        for (int i = 1; i <= 10000; i++) {
+            String payload = "Hello World " + i;
+            reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+        }
+        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+        // verify successful transaction
+        for (Long reqId : reqIds) {
+            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+        }
+        Assertions.assertAll(relpConnection::disconnect);
+        Assertions.assertEquals(10000, relpMeter.getCount());
         relp.close();
     }
 }
