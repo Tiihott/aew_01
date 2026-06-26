@@ -59,6 +59,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.azure.AzuriteContainer;
@@ -69,6 +70,7 @@ import org.testcontainers.utility.MountableFile;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -144,7 +146,7 @@ public class IntegrationTest {
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
         final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from partition '0' and returns the first 100 received or until the 30 seconds has elapsed.
+        // Read events from partition '0' and returns the first 100 received or until the 10 seconds has elapsed.
         final IterableStream<PartitionEvent> events = eventHubConsumerClient
                 .receiveFromPartition(partitionId, 100, startingPosition, Duration.ofSeconds(10));
 
@@ -154,6 +156,220 @@ public class IntegrationTest {
         Assertions.assertEquals("Hello World!", first.getData().getBodyAsString());
         Assertions.assertFalse(iterator.hasNext());
         Assertions.assertEquals(1, amqpMeter.getCount());
+        eventHubConsumerClient.close();
+    }
+
+    @Test
+    void testRelpAndAmqpSingleMediumBatch() {
+        final String connectionString = eventHubs.getConnectionString();
+
+        // Create consumer client to assert that producer works as expected.
+        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildConsumerClient();
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+
+        final RELP relp = new RELP(
+                "false",
+                "1601",
+                "changeit",
+                "changeit",
+                frameContext -> amqpClient
+                        .publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())))
+        );
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send batch of 1000 messages to the RELP server.
+        final RelpConnection relpConnection = new RelpConnection();
+        final int port = 1601;
+        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        final RelpBatch relpBatch = new RelpBatch();
+        List<Long> reqIds = new ArrayList<>();
+        List<String> expectedPayloads = new ArrayList<>();
+        for (int i = 1; i <= 1000; i++) {
+            String payload = "Hello World " + i;
+            reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+            expectedPayloads.add(payload);
+        }
+        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+        // verify successful transaction
+        for (Long reqId : reqIds) {
+            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+        }
+        Assertions.assertAll(relpConnection::disconnect);
+        relp.close();
+        amqpClient.close();
+
+        final String partitionId = "0";
+        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
+        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
+        // Read events from partition '0' and returns the first 1000 received or until the 240 seconds has elapsed.
+        final IterableStream<PartitionEvent> events = eventHubConsumerClient
+                .receiveFromPartition(partitionId, 1000, startingPosition, Duration.ofSeconds(240));
+
+        final Iterator<PartitionEvent> iterator = events.iterator();
+        final List<String> resultPayloads = new ArrayList<>();
+        while (iterator.hasNext()) {
+            PartitionEvent event = iterator.next();
+            resultPayloads.add(event.getData().getBodyAsString());
+        }
+        Assertions.assertEquals(1000, amqpMeter.getCount());
+        Assertions.assertEquals(expectedPayloads, resultPayloads);
+        eventHubConsumerClient.close();
+    }
+
+    @EnabledIfSystemProperty(
+            named = "runHeavyTests",
+            matches = "true"
+    )
+    @Test
+    void testRelpAndAmqpSingleLargeBatch() {
+        final String connectionString = eventHubs.getConnectionString();
+
+        // Create consumer client to assert that producer works as expected.
+        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildConsumerClient();
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+
+        final RELP relp = new RELP(
+                "false",
+                "1601",
+                "changeit",
+                "changeit",
+                frameContext -> amqpClient
+                        .publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())))
+        );
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send batch of 10000 messages to the RELP server.
+        final RelpConnection relpConnection = new RelpConnection();
+        final int port = 1601;
+        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        final RelpBatch relpBatch = new RelpBatch();
+        List<Long> reqIds = new ArrayList<>();
+        List<String> expectedPayloads = new ArrayList<>();
+        for (int i = 1; i <= 10000; i++) {
+            String payload = "Hello World " + i;
+            reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+            expectedPayloads.add(payload);
+        }
+        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+        // verify successful transaction
+        for (Long reqId : reqIds) {
+            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+        }
+        Assertions.assertAll(relpConnection::disconnect);
+        relp.close();
+        amqpClient.close();
+
+        final String partitionId = "0";
+        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
+        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
+        // Read events from partition '0' and returns the first 10000 received or until the 240 seconds has elapsed.
+        final IterableStream<PartitionEvent> events = eventHubConsumerClient
+                .receiveFromPartition(partitionId, 10000, startingPosition, Duration.ofSeconds(240));
+
+        final Iterator<PartitionEvent> iterator = events.iterator();
+        final List<String> resultPayloads = new ArrayList<>();
+        while (iterator.hasNext()) {
+            PartitionEvent event = iterator.next();
+            resultPayloads.add(event.getData().getBodyAsString());
+        }
+        Assertions.assertEquals(10000, amqpMeter.getCount());
+        Assertions.assertEquals(expectedPayloads, resultPayloads);
+        eventHubConsumerClient.close();
+    }
+
+    @EnabledIfSystemProperty(
+            named = "runHeavyTests",
+            matches = "true"
+    )
+    @Test
+    void testRelpAndAmqpMultipleMediumBatches() {
+        final String connectionString = eventHubs.getConnectionString();
+
+        // Create consumer client to assert that producer works as expected.
+        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildConsumerClient();
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+
+        final RELP relp = new RELP(
+                "false",
+                "1601",
+                "changeit",
+                "changeit",
+                frameContext -> amqpClient
+                        .publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())))
+        );
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send 10 batches of 1000 messages to the RELP server.
+        final RelpConnection relpConnection = new RelpConnection();
+        final int port = 1601;
+        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        int cursor = 1;
+        final List<String> expectedPayloads = new ArrayList<>();
+        for (int j = 1; j <= 10; j++) {
+            final RelpBatch relpBatch = new RelpBatch();
+            final List<Long> reqIds = new ArrayList<>();
+            for (int i = cursor; i < cursor + 1000; i++) {
+                String payload = "Hello World " + i;
+                reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+                expectedPayloads.add(payload);
+            }
+            Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+            // verify successful transaction
+            for (Long reqId : reqIds) {
+                Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+            }
+            cursor += 1000;
+        }
+
+        Assertions.assertAll(relpConnection::disconnect);
+        relp.close();
+        amqpClient.close();
+
+        final String partitionId = "0";
+        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
+        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
+        // Read events from partition '0' and returns the first 10000 received or until the 240 seconds has elapsed.
+        final IterableStream<PartitionEvent> events = eventHubConsumerClient
+                .receiveFromPartition(partitionId, 10000, startingPosition, Duration.ofSeconds(240));
+
+        final Iterator<PartitionEvent> iterator = events.iterator();
+        final List<String> resultPayloads = new ArrayList<>();
+        while (iterator.hasNext()) {
+            PartitionEvent event = iterator.next();
+            resultPayloads.add(event.getData().getBodyAsString());
+        }
+        Assertions.assertEquals(10000, amqpMeter.getCount());
+        Assertions.assertEquals(expectedPayloads, resultPayloads);
         eventHubConsumerClient.close();
     }
 }
