@@ -63,6 +63,7 @@ import org.testcontainers.utility.MountableFile;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -127,6 +128,50 @@ final class AMQPTest {
         Assertions.assertEquals("Test message two", second.getData().getBodyAsString());
         Assertions.assertFalse(iterator.hasNext());
         Assertions.assertEquals(2, amqpMeter.getCount());
+
+        client.close();
+        consumer.close();
+    }
+
+    @Test
+    void testPublishEventsMultiple() {
+        final String connectionString = eventHubs.getConnectionString();
+
+        // Create consumer client to assert that producer works as expected.
+        final EventHubConsumerClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildConsumerClient();
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
+        final List<EventData> expectedEvents = new ArrayList<>();
+        for (int i = 1; i <= 1000; i++) {
+            final List<EventData> allEvents = Arrays.asList(new EventData("Test message " + i));
+            client.publishEvents(allEvents);
+            expectedEvents.add(allEvents.getFirst());
+        }
+
+        final String partitionId = "0";
+        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
+        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
+        // Read events from partition '0' and returns the first 1001 received or until the 30 seconds has elapsed.
+        final IterableStream<PartitionEvent> events = consumer
+                .receiveFromPartition(partitionId, 1001, startingPosition, Duration.ofSeconds(10));
+
+        final Iterator<PartitionEvent> iterator = events.iterator();
+        Assertions.assertTrue(iterator.hasNext());
+        int i = 1;
+        final List<EventData> resultEvents = new ArrayList<>();
+        while (iterator.hasNext()) {
+            PartitionEvent event = iterator.next();
+            resultEvents.add(event.getData());
+            i++;
+        }
+        Assertions.assertEquals(1000, amqpMeter.getCount());
+        Assertions.assertEquals(expectedEvents, resultEvents);
 
         client.close();
         consumer.close();
