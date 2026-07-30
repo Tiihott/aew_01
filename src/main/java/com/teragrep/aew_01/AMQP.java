@@ -47,10 +47,12 @@ package com.teragrep.aew_01;
 
 import com.azure.core.credential.TokenCredential;
 import com.azure.messaging.eventhubs.*;
+import com.azure.messaging.eventhubs.models.CreateBatchOptions;
 import com.codahale.metrics.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class AMQP {
@@ -58,10 +60,12 @@ public final class AMQP {
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQP.class);
     private final Meter amqpMeter;
     private final EventHubProducerClient producerClient;
+    private final List<EventData> batchEvents;
 
     // Connection using connectionString
     public AMQP(final String connectionString, final String eventHubName, Meter meter) {
         this.amqpMeter = meter;
+        this.batchEvents = new ArrayList<>();
         LOGGER
                 .debug(
                         "Creating an EventHubProducerClient with Event Hub name <[{}]> and connection string <[{}]>",
@@ -80,6 +84,7 @@ public final class AMQP {
             Meter meter
     ) {
         this.amqpMeter = meter;
+        this.batchEvents = new ArrayList<>();
         LOGGER
                 .debug(
                         "Creating an EventHubProducerClient with namespace <[{}]> and Event Hub name <[{}]>",
@@ -92,6 +97,44 @@ public final class AMQP {
                 .buildProducerClient();
     }
 
+    public void addEvents(final EventData eventData) {
+        batchEvents.add(eventData);
+    }
+
+    public void commitEvents() {
+        CreateBatchOptions options = new CreateBatchOptions();
+        options.setMaximumSizeInBytes(1024);
+
+        LOGGER.info("Publishing events to Event Hub with <{}> events", batchEvents.size());
+        // create a batch
+        EventDataBatch eventDataBatch = producerClient.createBatch(options);
+        for (final EventData eventData : batchEvents) {
+            // try to add the event from the array to the batch
+            if (!eventDataBatch.tryAdd(eventData)) {
+                LOGGER.debug("Batch is full with <{}> events, sending it", eventDataBatch.getCount());
+                // if the batch is full, send it and then create a new batch
+                producerClient.send(eventDataBatch);
+                eventDataBatch = producerClient.createBatch(options);
+
+                // Try to add that event that couldn't fit before.
+                if (!eventDataBatch.tryAdd(eventData)) {
+                    throw new IllegalArgumentException(
+                            "Event is too large for an empty batch. Max size: " + eventDataBatch.getMaxSizeInBytes()
+                    );
+                }
+            }
+        }
+        // send the last batch of remaining events
+        if (eventDataBatch.getCount() > 0) {
+            LOGGER.debug("Remaining event batch has <{}> events, sending it", eventDataBatch.getCount());
+            producerClient.send(eventDataBatch);
+        }
+
+        LOGGER.info("Event batch sent successfully");
+        amqpMeter.mark(batchEvents.size());
+        batchEvents.clear();
+    }
+
     /**
      * Code for publishing events.
      * 
@@ -99,16 +142,19 @@ public final class AMQP {
      */
     public void publishEvents(final List<EventData> allEvents) {
 
+        CreateBatchOptions options = new CreateBatchOptions();
+        options.setMaximumSizeInBytes(1024);
+
         LOGGER.info("Publishing events to Event Hub with <{}> events", allEvents.size());
         // create a batch
-        EventDataBatch eventDataBatch = producerClient.createBatch();
+        EventDataBatch eventDataBatch = producerClient.createBatch(options);
         for (final EventData eventData : allEvents) {
             // try to add the event from the array to the batch
             if (!eventDataBatch.tryAdd(eventData)) {
                 LOGGER.debug("Batch is full with <{}> events, sending it", eventDataBatch.getCount());
                 // if the batch is full, send it and then create a new batch
                 producerClient.send(eventDataBatch);
-                eventDataBatch = producerClient.createBatch();
+                eventDataBatch = producerClient.createBatch(options);
 
                 // Try to add that event that couldn't fit before.
                 if (!eventDataBatch.tryAdd(eventData)) {
