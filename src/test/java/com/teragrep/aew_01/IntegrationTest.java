@@ -341,11 +341,11 @@ public class IntegrationTest {
             expectedPayloads.add(payload);
         }
         Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+        amqpClient.flushEvents();
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransactionAll());
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
-        amqpClient.commitEvents();
         amqpClient.close();
 
         final String partitionId = "0";
