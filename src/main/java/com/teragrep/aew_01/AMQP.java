@@ -47,7 +47,6 @@ package com.teragrep.aew_01;
 
 import com.azure.core.credential.TokenCredential;
 import com.azure.messaging.eventhubs.*;
-import com.azure.messaging.eventhubs.models.CreateBatchOptions;
 import com.codahale.metrics.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +65,6 @@ public final class AMQP {
     private final List<EventDataBatch> eventDataBatchList;
     private final static long MAX_BATCH_TIME_MS = 100;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final CreateBatchOptions options;
 
     // Connection using connectionString
     public AMQP(final String connectionString, final String eventHubName, Meter meter) {
@@ -80,8 +78,6 @@ public final class AMQP {
                 .connectionString(connectionString, eventHubName)
                 .buildProducerClient();
         this.eventDataBatchList = new ArrayList<>();
-        this.options = new CreateBatchOptions();
-        options.setMaximumSizeInBytes(1024);
     }
 
     // Connection using TokenCredential
@@ -103,8 +99,6 @@ public final class AMQP {
                 .credential(credential)
                 .buildProducerClient();
         this.eventDataBatchList = new ArrayList<>();
-        this.options = new CreateBatchOptions();
-        options.setMaximumSizeInBytes(1024);
     }
 
     public void start() {
@@ -117,11 +111,11 @@ public final class AMQP {
 
     public void addEvents(final EventData eventData) {
         if (eventDataBatchList.isEmpty()) {
-            eventDataBatchList.addFirst(producerClient.createBatch(options));
+            eventDataBatchList.addFirst(producerClient.createBatch());
         }
         // try to add the event to the batch
         if (!eventDataBatchList.getFirst().tryAdd(eventData)) {
-            eventDataBatchList.addFirst(producerClient.createBatch(options));
+            eventDataBatchList.addFirst(producerClient.createBatch());
             // Try to add that event that couldn't fit before.
             if (!eventDataBatchList.getFirst().tryAdd(eventData)) {
                 throw new IllegalArgumentException(
@@ -147,7 +141,7 @@ public final class AMQP {
             }
         }
         if (eventDataBatchList.isEmpty()) {
-            eventDataBatchList.addFirst(producerClient.createBatch(options));
+            eventDataBatchList.addFirst(producerClient.createBatch());
         }
     }
 
