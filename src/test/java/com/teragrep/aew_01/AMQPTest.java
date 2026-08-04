@@ -95,7 +95,7 @@ final class AMQPTest {
     }
 
     @Test
-    void testPublishEvents() {
+    void testAddEvents() {
         final String connectionString = eventHubs.getConnectionString();
 
         // Create consumer client to assert that producer works as expected.
@@ -110,7 +110,10 @@ final class AMQPTest {
         final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
         final List<EventData> allEvents = Arrays
                 .asList(new EventData("Test message one"), new EventData("Test message two"));
-        client.publishEvents(allEvents);
+        for (EventData eventData : allEvents) {
+            client.addEvents(eventData);
+        }
+        client.flushEvents();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
@@ -134,7 +137,7 @@ final class AMQPTest {
     }
 
     @Test
-    void testPublishEventsMultiple() {
+    void testAddEventsMultiple() {
         final String connectionString = eventHubs.getConnectionString();
 
         // Create consumer client to assert that producer works as expected.
@@ -149,10 +152,11 @@ final class AMQPTest {
         final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
-            final List<EventData> allEvents = Arrays.asList(new EventData("Test message " + i));
-            client.publishEvents(allEvents);
-            expectedEvents.add(allEvents.getFirst());
+            final EventData eventData = new EventData("Test message " + i);
+            client.addEvents(eventData);
+            expectedEvents.add(eventData);
         }
+        client.flushEvents();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));

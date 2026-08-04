@@ -66,7 +66,6 @@ import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -110,14 +109,16 @@ public class Main {
                 new AmqpConfig(configSource).namespaceName(),
                 amqpMeter
         );
+        amqpClient.start();
         try (
                 RELP relp = new RELP(new RelpConfig(configSource).tls(), new RelpConfig(configSource).port(), new RelpConfig(configSource).tlsTruststorePassword(), new RelpConfig(configSource).tlsKeystorePassword(), frameContext -> {
-                    amqpClient.publishEvents(List.of(new EventData(frameContext.relpFrame().payload().toString())));
+                    amqpClient.addEvents(new EventData(frameContext.relpFrame().payload().toString()));
                     relpMeter.mark();
                 })
         ) {
             relp.run();
         }
+        amqpClient.stop();
         amqpClient.close();
     }
 

@@ -151,41 +151,6 @@ public final class AMQP {
         }
     }
 
-    /**
-     * Code for publishing events.
-     * 
-     * @throws IllegalArgumentException if the EventData is bigger than the max batch size.
-     */
-    public void publishEvents(final List<EventData> allEvents) {
-        LOGGER.info("Publishing events to Event Hub with <{}> events", allEvents.size());
-        // create a batch
-        EventDataBatch eventDataBatch = producerClient.createBatch(options);
-        for (final EventData eventData : allEvents) {
-            // try to add the event from the array to the batch
-            if (!eventDataBatch.tryAdd(eventData)) {
-                LOGGER.debug("Batch is full with <{}> events, sending it", eventDataBatch.getCount());
-                // if the batch is full, send it and then create a new batch
-                producerClient.send(eventDataBatch);
-                eventDataBatch = producerClient.createBatch(options);
-
-                // Try to add that event that couldn't fit before.
-                if (!eventDataBatch.tryAdd(eventData)) {
-                    throw new IllegalArgumentException(
-                            "Event is too large for an empty batch. Max size: " + eventDataBatch.getMaxSizeInBytes()
-                    );
-                }
-            }
-        }
-        // send the last batch of remaining events
-        if (eventDataBatch.getCount() > 0) {
-            LOGGER.debug("Remaining event batch has <{}> events, sending it", eventDataBatch.getCount());
-            producerClient.send(eventDataBatch);
-        }
-
-        LOGGER.info("Event batch sent successfully");
-        amqpMeter.mark(allEvents.size());
-    }
-
     public void close() {
         producerClient.close();
     }
