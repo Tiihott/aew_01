@@ -54,6 +54,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public final class AMQP {
 
@@ -61,6 +64,9 @@ public final class AMQP {
     private final Meter amqpMeter;
     private final EventHubProducerClient producerClient;
     private final List<EventDataBatch> eventDataBatchList;
+    private final static long MAX_BATCH_TIME_MS = 100;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final CreateBatchOptions options;
 
     // Connection using connectionString
     public AMQP(final String connectionString, final String eventHubName, Meter meter) {
@@ -74,6 +80,8 @@ public final class AMQP {
                 .connectionString(connectionString, eventHubName)
                 .buildProducerClient();
         this.eventDataBatchList = new ArrayList<>();
+        this.options = new CreateBatchOptions();
+        options.setMaximumSizeInBytes(1024);
     }
 
     // Connection using TokenCredential
@@ -95,15 +103,25 @@ public final class AMQP {
                 .credential(credential)
                 .buildProducerClient();
         this.eventDataBatchList = new ArrayList<>();
+        this.options = new CreateBatchOptions();
+        options.setMaximumSizeInBytes(1024);
+    }
+
+    public void start() {
+        scheduler.scheduleAtFixedRate(this::flushEvents, 0, MAX_BATCH_TIME_MS, TimeUnit.MILLISECONDS);
+    }
+
+    public void stop() {
+        scheduler.shutdownNow();
     }
 
     public void addEvents(final EventData eventData) {
         if (eventDataBatchList.isEmpty()) {
-            eventDataBatchList.add(producerClient.createBatch());
+            eventDataBatchList.addFirst(producerClient.createBatch(options));
         }
         // try to add the event to the batch
         if (!eventDataBatchList.getFirst().tryAdd(eventData)) {
-            flushEvents();
+            eventDataBatchList.addFirst(producerClient.createBatch(options));
             // Try to add that event that couldn't fit before.
             if (!eventDataBatchList.getFirst().tryAdd(eventData)) {
                 throw new IllegalArgumentException(
@@ -115,12 +133,22 @@ public final class AMQP {
     }
 
     public void flushEvents() {
-        LOGGER.debug("Batch is full with <{}> events, sending it", eventDataBatchList.getFirst().getCount());
-        // if the batch is full, send it and then create a new batch
-        producerClient.send(eventDataBatchList.getFirst());
-        LOGGER.info("Event batch sent successfully");
-        amqpMeter.mark(eventDataBatchList.getFirst().getCount());
-        eventDataBatchList.clear();
+        while (!eventDataBatchList.isEmpty() && eventDataBatchList.getLast().getCount() > 0) {
+            if (eventDataBatchList.getLast().getCount() > 0) {
+                LOGGER
+                        .debug(
+                                "Batch is ready to be sent with <{}> events, sending it",
+                                eventDataBatchList.getLast().getCount()
+                        );
+                final EventDataBatch eventDataBatch = eventDataBatchList.removeLast();
+                producerClient.send(eventDataBatch);
+                LOGGER.info("Event batch sent successfully");
+                amqpMeter.mark(eventDataBatch.getCount());
+            }
+        }
+        if (eventDataBatchList.isEmpty()) {
+            eventDataBatchList.addFirst(producerClient.createBatch(options));
+        }
     }
 
     /**
@@ -129,10 +157,6 @@ public final class AMQP {
      * @throws IllegalArgumentException if the EventData is bigger than the max batch size.
      */
     public void publishEvents(final List<EventData> allEvents) {
-
-        CreateBatchOptions options = new CreateBatchOptions();
-        options.setMaximumSizeInBytes(1024);
-
         LOGGER.info("Publishing events to Event Hub with <{}> events", allEvents.size());
         // create a batch
         EventDataBatch eventDataBatch = producerClient.createBatch(options);

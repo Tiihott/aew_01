@@ -316,6 +316,7 @@ public class IntegrationTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        amqpClient.start();
 
         final RELP relp = new RELP(
                 "false",
@@ -341,11 +342,15 @@ public class IntegrationTest {
             expectedPayloads.add(payload);
         }
         Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        amqpClient.flushEvents();
+        // Wait for the AMQP scheduler to flush events to eventhub
+        while (amqpMeter.getCount() < 10000) {
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransactionAll());
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
+        amqpClient.stop();
         amqpClient.close();
 
         final String partitionId = "0";
