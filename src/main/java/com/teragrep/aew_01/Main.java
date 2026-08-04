@@ -107,6 +107,7 @@ public class Main {
                 credential,
                 new AmqpConfig(configSource).eventHubName(),
                 new AmqpConfig(configSource).namespaceName(),
+                new AmqpConfig(configSource).maxBatchTimeMs(),
                 amqpMeter
         );
         amqpClient.start();

@@ -63,11 +63,11 @@ public final class AMQP {
     private final Meter amqpMeter;
     private final EventHubProducerClient producerClient;
     private final List<EventDataBatch> eventDataBatchList;
-    private final static long MAX_BATCH_TIME_MS = 100;
+    private final long MAX_BATCH_TIME_MS;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     // Connection using connectionString
-    public AMQP(final String connectionString, final String eventHubName, Meter meter) {
+    public AMQP(final String connectionString, final String eventHubName, final long maxBatchTimeMs, Meter meter) {
         this.amqpMeter = meter;
         LOGGER
                 .debug(
@@ -78,6 +78,7 @@ public final class AMQP {
                 .connectionString(connectionString, eventHubName)
                 .buildProducerClient();
         this.eventDataBatchList = new ArrayList<>();
+        this.MAX_BATCH_TIME_MS = maxBatchTimeMs;
     }
 
     // Connection using TokenCredential
@@ -85,6 +86,7 @@ public final class AMQP {
             final TokenCredential credential,
             final String eventHubName,
             final String fullyQualifiedNamespace,
+            final long maxBatchTimeMs,
             Meter meter
     ) {
         this.amqpMeter = meter;
@@ -99,6 +101,7 @@ public final class AMQP {
                 .credential(credential)
                 .buildProducerClient();
         this.eventDataBatchList = new ArrayList<>();
+        this.MAX_BATCH_TIME_MS = maxBatchTimeMs;
     }
 
     public void start() {

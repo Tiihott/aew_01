@@ -116,7 +116,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
         amqpClient.start();
 
         final RELP relp = new RELP(
@@ -176,7 +176,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
         amqpClient.start();
 
         final RELP relp = new RELP(
@@ -250,7 +250,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
         amqpClient.start();
 
         final RELP relp = new RELP(
@@ -324,7 +324,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
         amqpClient.start();
 
         final RELP relp = new RELP(
@@ -398,7 +398,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
         amqpClient.start();
 
         final RELP relp = new RELP(
