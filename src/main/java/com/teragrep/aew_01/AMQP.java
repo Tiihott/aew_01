@@ -130,21 +130,25 @@ public final class AMQP {
     }
 
     public void flushEvents() {
+        boolean allBatchesProcessed = false;
         while (!eventDataBatchList.isEmpty() && eventDataBatchList.getLast().getCount() > 0) {
-            if (eventDataBatchList.getLast().getCount() > 0) {
-                LOGGER
-                        .debug(
-                                "Batch is ready to be sent with <{}> events, sending it",
-                                eventDataBatchList.getLast().getCount()
-                        );
-                final EventDataBatch eventDataBatch = eventDataBatchList.removeLast();
-                producerClient.send(eventDataBatch);
-                LOGGER.info("Event batch sent successfully");
-                amqpMeter.mark(eventDataBatch.getCount());
+            LOGGER
+                    .debug(
+                            "Batch is ready to be sent with <{}> events, sending it",
+                            eventDataBatchList.getLast().getCount()
+                    );
+            // The eventDataBatchList must always have at least one EventDataBatch object present in it for addEvents() to work properly.
+            if (eventDataBatchList.size() == 1) {
+                eventDataBatchList.addFirst(producerClient.createBatch());
+                allBatchesProcessed = true;
             }
-        }
-        if (eventDataBatchList.isEmpty()) {
-            eventDataBatchList.addFirst(producerClient.createBatch());
+            final EventDataBatch eventDataBatch = eventDataBatchList.removeLast();
+            producerClient.send(eventDataBatch);
+            LOGGER.info("Event batch sent successfully");
+            amqpMeter.mark(eventDataBatch.getCount());
+            if (allBatchesProcessed) {
+                break;
+            }
         }
     }
 
