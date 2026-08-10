@@ -107,10 +107,9 @@ public class Main {
                 credential,
                 new AmqpConfig(configSource).eventHubName(),
                 new AmqpConfig(configSource).namespaceName(),
-                new AmqpConfig(configSource).maxBatchTimeMs(),
+                new AmqpConfig(configSource).maxBatchTimeS(),
                 amqpMeter
         );
-        amqpClient.start();
         try (
                 RELP relp = new RELP(new RelpConfig(configSource).tls(), new RelpConfig(configSource).port(), new RelpConfig(configSource).tlsTruststorePassword(), new RelpConfig(configSource).tlsKeystorePassword(), frameContext -> {
                     amqpClient.addEvents(new EventData(frameContext.relpFrame().payload().toString()));
@@ -119,7 +118,6 @@ public class Main {
         ) {
             relp.run();
         }
-        amqpClient.stop();
         amqpClient.close();
     }
 

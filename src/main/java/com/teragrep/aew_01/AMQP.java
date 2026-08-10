@@ -51,34 +51,40 @@ import com.codahale.metrics.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 public final class AMQP {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQP.class);
     private final Meter amqpMeter;
-    private final EventHubProducerClient producerClient;
-    private final List<EventDataBatch> eventDataBatchList;
-    private final long MAX_BATCH_TIME_MS;
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final EventHubBufferedProducerAsyncClient producerClient;
 
     // Connection using connectionString
-    public AMQP(final String connectionString, final String eventHubName, final long maxBatchTimeMs, Meter meter) {
+    public AMQP(final String connectionString, final String eventHubName, final long maxBatchTimeS, Meter meter) {
         this.amqpMeter = meter;
         LOGGER
                 .debug(
                         "Creating an EventHubProducerClient with Event Hub name <[{}]> and connection string <[{}]>",
                         eventHubName, connectionString
                 );
-        this.producerClient = new EventHubClientBuilder()
+        this.producerClient = new EventHubBufferedProducerClientBuilder()
                 .connectionString(connectionString, eventHubName)
-                .buildProducerClient();
-        this.eventDataBatchList = new ArrayList<>();
-        this.MAX_BATCH_TIME_MS = maxBatchTimeMs;
+                .onSendBatchSucceeded(sendBatch -> {
+                    LOGGER.info("Successfully published events to {}: ", sendBatch.getPartitionId());
+                    sendBatch.getEvents().forEach(event -> {
+                        amqpMeter.mark();
+                    });
+                })
+                .onSendBatchFailed(sendBatchFailedContext -> {
+                    LOGGER
+                            .error(
+                                    "Failed to publish events to {}. Error: {}",
+                                    sendBatchFailedContext.getPartitionId(), sendBatchFailedContext.getThrowable()
+                            );
+                })
+                .maxWaitTime(Duration.ofSeconds(maxBatchTimeS))
+                .maxEventBufferLengthPerPartition(1500)
+                .buildAsyncClient();
     }
 
     // Connection using TokenCredential
@@ -86,7 +92,7 @@ public final class AMQP {
             final TokenCredential credential,
             final String eventHubName,
             final String fullyQualifiedNamespace,
-            final long maxBatchTimeMs,
+            final long maxBatchTimeS,
             Meter meter
     ) {
         this.amqpMeter = meter;
@@ -95,61 +101,27 @@ public final class AMQP {
                         "Creating an EventHubProducerClient with namespace <[{}]> and Event Hub name <[{}]>",
                         fullyQualifiedNamespace, eventHubName
                 );
-        this.producerClient = new EventHubClientBuilder()
+        this.producerClient = new EventHubBufferedProducerClientBuilder()
                 .fullyQualifiedNamespace(fullyQualifiedNamespace)
                 .eventHubName(eventHubName)
                 .credential(credential)
-                .buildProducerClient();
-        this.eventDataBatchList = new ArrayList<>();
-        this.MAX_BATCH_TIME_MS = maxBatchTimeMs;
-    }
-
-    public void start() {
-        scheduler.scheduleAtFixedRate(this::flushEvents, 0, MAX_BATCH_TIME_MS, TimeUnit.MILLISECONDS);
-    }
-
-    public void stop() {
-        scheduler.shutdownNow();
+                .onSendBatchSucceeded(sendBatch -> {
+                })
+                .onSendBatchFailed(sendBatchFailedContext -> {
+                })
+                .maxWaitTime(Duration.ofSeconds(maxBatchTimeS))
+                .maxEventBufferLengthPerPartition(1500)
+                .buildAsyncClient();
     }
 
     public void addEvents(final EventData eventData) {
-        if (eventDataBatchList.isEmpty()) {
-            eventDataBatchList.addFirst(producerClient.createBatch());
-        }
-        // try to add the event to the batch
-        if (!eventDataBatchList.getFirst().tryAdd(eventData)) {
-            eventDataBatchList.addFirst(producerClient.createBatch());
-            // Try to add that event that couldn't fit before.
-            if (!eventDataBatchList.getFirst().tryAdd(eventData)) {
-                throw new IllegalArgumentException(
-                        "Event is too large for an empty batch. Max size: "
-                                + eventDataBatchList.getFirst().getMaxSizeInBytes()
-                );
-            }
-        }
-    }
-
-    public void flushEvents() {
-        boolean allBatchesProcessed = false;
-        while (!eventDataBatchList.isEmpty() && eventDataBatchList.getLast().getCount() > 0) {
-            LOGGER
-                    .debug(
-                            "Batch is ready to be sent with <{}> events, sending it",
-                            eventDataBatchList.getLast().getCount()
-                    );
-            // The eventDataBatchList must always have at least one EventDataBatch object present in it for addEvents() to work properly.
-            if (eventDataBatchList.size() == 1) {
-                eventDataBatchList.addFirst(producerClient.createBatch());
-                allBatchesProcessed = true;
-            }
-            final EventDataBatch eventDataBatch = eventDataBatchList.removeLast();
-            producerClient.send(eventDataBatch);
-            LOGGER.info("Event batch sent successfully");
-            amqpMeter.mark(eventDataBatch.getCount());
-            if (allBatchesProcessed) {
-                break;
-            }
-        }
+        producerClient.enqueueEvent(eventData).subscribe(numberOfEvents -> {
+            LOGGER.info("There are currently: {} events in buffer.", numberOfEvents);
+        }, error -> {
+            LOGGER.error("Error occurred enqueueing events: ", error);
+        }, () -> {
+            LOGGER.info("Events successfully enqueued.");
+        });
     }
 
     public void close() {

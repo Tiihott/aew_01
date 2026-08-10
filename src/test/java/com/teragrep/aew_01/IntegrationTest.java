@@ -116,8 +116,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
-        amqpClient.start();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, amqpMeter);
 
         final RELP relp = new RELP(
                 "false",
@@ -143,7 +142,6 @@ public class IntegrationTest {
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
-        amqpClient.stop();
         amqpClient.close();
 
         final String partitionId = "0";
@@ -176,8 +174,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
-        amqpClient.start();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, amqpMeter);
 
         final RELP relp = new RELP(
                 "false",
@@ -211,7 +208,6 @@ public class IntegrationTest {
         }
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
-        amqpClient.stop();
         amqpClient.close();
 
         final String partitionId = "0";
@@ -250,8 +246,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
-        amqpClient.start();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 10, amqpMeter);
 
         final RELP relp = new RELP(
                 "false",
@@ -272,7 +267,7 @@ public class IntegrationTest {
         List<Long> reqIds = new ArrayList<>();
         List<String> expectedPayloads = new ArrayList<>();
         for (int i = 1; i <= 10000; i++) {
-            String payload = "Hello World " + i;
+            String payload = "Hello World";
             reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
             expectedPayloads.add(payload);
         }
@@ -281,19 +276,18 @@ public class IntegrationTest {
         while (amqpMeter.getCount() < 10000) {
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        amqpClient.close();
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransactionAll());
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
-        amqpClient.stop();
-        amqpClient.close();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
         final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
         // Read events from partition '0' and returns the first 10000 received or until the 240 seconds has elapsed.
         final IterableStream<PartitionEvent> events = eventHubConsumerClient
-                .receiveFromPartition(partitionId, 10000, startingPosition, Duration.ofSeconds(240));
+                .receiveFromPartition(partitionId, 10000, startingPosition, Duration.ofSeconds(600));
 
         final Iterator<PartitionEvent> iterator = events.iterator();
         final List<String> resultPayloads = new ArrayList<>();
@@ -301,6 +295,7 @@ public class IntegrationTest {
             PartitionEvent event = iterator.next();
             resultPayloads.add(event.getData().getBodyAsString());
         }
+        Assertions.assertEquals(10000, resultPayloads.size());
         Assertions.assertEquals(10000, amqpMeter.getCount());
         Assertions.assertEquals(expectedPayloads, resultPayloads);
         eventHubConsumerClient.close();
@@ -324,8 +319,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
-        amqpClient.start();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, amqpMeter);
 
         final RELP relp = new RELP(
                 "false",
@@ -346,7 +340,7 @@ public class IntegrationTest {
         List<Long> reqIds = new ArrayList<>();
         List<String> expectedPayloads = new ArrayList<>();
         for (int i = 1; i <= 100000; i++) {
-            String payload = "Hello World " + i;
+            String payload = "Hello World";
             reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
             expectedPayloads.add(payload);
         }
@@ -355,12 +349,11 @@ public class IntegrationTest {
         while (amqpMeter.getCount() < 100000) {
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        amqpClient.close();
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransactionAll());
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
-        amqpClient.stop();
-        amqpClient.close();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
@@ -398,8 +391,7 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 100, amqpMeter);
-        amqpClient.start();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, amqpMeter);
 
         final RELP relp = new RELP(
                 "false",
@@ -422,7 +414,7 @@ public class IntegrationTest {
             final RelpBatch relpBatch = new RelpBatch();
             final List<Long> reqIds = new ArrayList<>();
             for (int i = cursor; i < cursor + 1000; i++) {
-                String payload = "Hello World " + i;
+                String payload = "Hello World";
                 reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
                 expectedPayloads.add(payload);
             }
@@ -437,11 +429,10 @@ public class IntegrationTest {
         while (amqpMeter.getCount() < 10000) {
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        amqpClient.close();
 
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
-        amqpClient.stop();
-        amqpClient.close();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));

@@ -53,7 +53,7 @@ public final class AmqpConfig {
     private final String eventHubName;
     private final String connectionString;
     private final String clientId;
-    private final long maxBatchTimeMs;
+    private final long maxBatchTimeS;
 
     public AmqpConfig(final Sourceable configSource) {
         this(
@@ -61,7 +61,7 @@ public final class AmqpConfig {
                 configSource.source("azure.eventhub", "<EVENT HUB NAME>"),
                 configSource.source("azure.connectionString", "<CONNECTION STRING>"),
                 configSource.source("azure.userManagedIdentityClientId", "<USER MANAGED IDENTITY ID>"),
-                configSource.source("azure.maxBatchTimeMs", "100")
+                configSource.source("azure.maxBatchTimeS", "60")
         );
     }
 
@@ -70,13 +70,13 @@ public final class AmqpConfig {
             String fullyQualifiedNamespace,
             String connectionString,
             String userManagedIdentityClientId,
-            String maxBatchTimeMs
+            String maxBatchTimeS
     ) {
         this.eventHubName = eventHubName;
         this.fullyQualifiedNamespace = fullyQualifiedNamespace;
         this.connectionString = connectionString;
         this.clientId = userManagedIdentityClientId;
-        this.maxBatchTimeMs = Long.parseLong(maxBatchTimeMs);
+        this.maxBatchTimeS = Long.parseLong(maxBatchTimeS);
     }
 
     public String namespaceName() {
@@ -95,7 +95,7 @@ public final class AmqpConfig {
         return clientId;
     }
 
-    public long maxBatchTimeMs() {
-        return maxBatchTimeMs;
+    public long maxBatchTimeS() {
+        return maxBatchTimeS;
     }
 }

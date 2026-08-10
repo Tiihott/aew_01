@@ -107,20 +107,22 @@ final class AMQPTest {
                 .buildConsumerClient();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = new AMQP(connectionString, "eh1", 100, amqpMeter);
+        final AMQP client = new AMQP(connectionString, "eh1", 1, amqpMeter);
         final List<EventData> allEvents = Arrays
                 .asList(new EventData("Test message one"), new EventData("Test message two"));
         for (EventData eventData : allEvents) {
             client.addEvents(eventData);
         }
-        client.flushEvents();
+        // Wait and .close() for the AMQP client to flush any remaining batches
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
+        client.close();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
         final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
         // Read events from partition '0' and returns the first 100 received or until the 30 seconds has elapsed.
         final IterableStream<PartitionEvent> events = consumer
-                .receiveFromPartition(partitionId, 100, startingPosition, Duration.ofSeconds(10));
+                .receiveFromPartition(partitionId, 2, startingPosition, Duration.ofSeconds(10));
 
         final Iterator<PartitionEvent> iterator = events.iterator();
         Assertions.assertTrue(iterator.hasNext());
@@ -131,8 +133,6 @@ final class AMQPTest {
         Assertions.assertEquals("Test message two", second.getData().getBodyAsString());
         Assertions.assertFalse(iterator.hasNext());
         Assertions.assertEquals(2, amqpMeter.getCount());
-
-        client.close();
         consumer.close();
     }
 
@@ -149,14 +149,16 @@ final class AMQPTest {
                 .buildConsumerClient();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = new AMQP(connectionString, "eh1", 100, amqpMeter);
+        final AMQP client = new AMQP(connectionString, "eh1", 1, amqpMeter);
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
             final EventData eventData = new EventData("Test message " + i);
             client.addEvents(eventData);
             expectedEvents.add(eventData);
         }
-        client.flushEvents();
+        // Wait and .close() for the AMQP client to flush any remaining batches
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
+        client.close();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
@@ -174,8 +176,6 @@ final class AMQPTest {
         }
         Assertions.assertEquals(1000, amqpMeter.getCount());
         Assertions.assertEquals(expectedEvents, resultEvents);
-
-        client.close();
         consumer.close();
     }
 
@@ -185,7 +185,7 @@ final class AMQPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final AMQP client = Assertions
-                .assertDoesNotThrow(() -> new AMQP(credential, "eh1", "emulatorNs1", 100, amqpMeter));
+                .assertDoesNotThrow(() -> new AMQP(credential, "eh1", "emulatorNs1", 1, amqpMeter));
         // .publishEvents() is not supported by the EventHub Emulator when the client has been built using TokenCredential.
         client.close();
     }
