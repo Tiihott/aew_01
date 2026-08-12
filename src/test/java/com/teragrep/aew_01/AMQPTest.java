@@ -111,7 +111,8 @@ final class AMQPTest {
         final List<EventData> allEvents = Arrays
                 .asList(new EventData("Test message one"), new EventData("Test message two"));
         for (EventData eventData : allEvents) {
-            client.addEvents(eventData);
+            BufferListener bufferListener = new BufferListenerImpl();
+            client.addEvents(eventData, bufferListener);
         }
         // Wait and .close() for the AMQP client to flush any remaining batches
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
@@ -153,7 +154,9 @@ final class AMQPTest {
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
             final EventData eventData = new EventData("Test message " + i);
-            client.addEvents(eventData);
+            BufferListener bufferListener = new BufferListenerImpl();
+            client.addEvents(eventData, bufferListener);
+            ;
             expectedEvents.add(eventData);
         }
         // Wait and .close() for the AMQP client to flush any remaining batches

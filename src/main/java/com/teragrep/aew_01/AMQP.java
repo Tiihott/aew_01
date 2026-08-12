@@ -114,13 +114,15 @@ public final class AMQP {
                 .buildAsyncClient();
     }
 
-    public void addEvents(final EventData eventData) {
+    public void addEvents(final EventData eventData, BufferListener bufferListener) {
         producerClient.enqueueEvent(eventData).subscribe(numberOfEvents -> {
             LOGGER.info("There are currently: {} events in buffer.", numberOfEvents);
         }, error -> {
             LOGGER.error("Error occurred enqueueing events: ", error);
+            bufferListener.onFailure();
         }, () -> {
             LOGGER.info("Events successfully enqueued.");
+            bufferListener.onSuccess();
         });
     }
 

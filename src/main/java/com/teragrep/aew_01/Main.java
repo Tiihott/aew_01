@@ -112,7 +112,19 @@ public class Main {
         );
         try (
                 RELP relp = new RELP(new RelpConfig(configSource).tls(), new RelpConfig(configSource).port(), new RelpConfig(configSource).tlsTruststorePassword(), new RelpConfig(configSource).tlsKeystorePassword(), frameContext -> {
-                    amqpClient.addEvents(new EventData(frameContext.relpFrame().payload().toString()));
+                    BufferListener bufferListener = new BufferListenerImpl();
+                    amqpClient.addEvents(new EventData(frameContext.relpFrame().payload().toString()), bufferListener);
+                    while (!bufferListener.complete()) {
+                        try {
+                            Thread.sleep(100);
+                        }
+                        catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    if (!bufferListener.result()) {
+                        throw new RuntimeException("Failed to transfer events to EventHub");
+                    }
                     relpMeter.mark();
                 })
         ) {
