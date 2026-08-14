@@ -55,6 +55,7 @@ import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
 import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.FrameDelegate;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +68,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -105,6 +107,30 @@ public final class RELP implements Runnable, AutoCloseable {
         this.frameDelegateSupplier = () -> {
             LOGGER.debug("Providing frameDelegate for a connection");
             return new DefaultFrameDelegate(syslogConsumer);
+        };
+        try {
+            eventLoop = eventLoopFactory.create();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        eventLoopThread = new Thread(eventLoop);
+    }
+
+    public RELP(
+            final String tls,
+            final String port,
+            final String tlsKeystore,
+            final String tlsKeystorePassword,
+            Map<String, RelpEvent> relpCommandConsumerMap
+    ) {
+        this.tls = tls;
+        this.port = port;
+        this.tlsKeystore = tlsKeystore;
+        this.tlsKeystorePassword = tlsKeystorePassword;
+        this.frameDelegateSupplier = () -> {
+            LOGGER.debug("Providing frameDelegate for a connection");
+            return new DefaultFrameDelegate(relpCommandConsumerMap);
         };
         try {
             eventLoop = eventLoopFactory.create();

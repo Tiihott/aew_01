@@ -103,11 +103,13 @@ public class Main {
                 .build();
         LOGGER.debug("EventHub credentials built successfully");
 
+        final PublishListener publishListener = new PublishListenerImpl();
         final AMQP amqpClient = new AMQP(
                 credential,
                 new AmqpConfig(configSource).eventHubName(),
                 new AmqpConfig(configSource).namespaceName(),
                 new AmqpConfig(configSource).maxBatchTimeS(),
+                publishListener,
                 amqpMeter
         );
         try (

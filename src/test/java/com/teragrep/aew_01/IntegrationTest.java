@@ -53,8 +53,16 @@ import com.azure.messaging.eventhubs.models.EventPosition;
 import com.azure.messaging.eventhubs.models.PartitionEvent;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.teragrep.net_01.channel.buffer.writable.Writeable;
 import com.teragrep.rlp_01.RelpBatch;
+import com.teragrep.rlp_01.RelpCommand;
 import com.teragrep.rlp_01.RelpConnection;
+import com.teragrep.rlp_03.frame.RelpFrame;
+import com.teragrep.rlp_03.frame.RelpFrameFactory;
+import com.teragrep.rlp_03.frame.delegate.FrameContext;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEventOpen;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,9 +78,12 @@ import org.testcontainers.utility.MountableFile;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class IntegrationTest {
 
@@ -103,6 +114,183 @@ public class IntegrationTest {
     }
 
     @Test
+    void testDeferredRelpAndAmqp() {
+        /*
+         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
+         */
+
+        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        /*
+         * Add default commands, open and close, they are mandatory
+         */
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+
+        /*
+         * Queue for deferring the processing of the frames
+         */
+        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(1024);
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                frameContexts.add(frameContext);
+            }
+
+            @Override
+            public void close() {
+                frameContexts.clear();
+            }
+        };
+
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
+        final String connectionString = eventHubs.getConnectionString();
+
+        // Create consumer client to assert that producer works as expected.
+        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildConsumerClient();
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 5, publishListener, amqpMeter);
+
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        /*
+         * Start deferred processing, otherwise our client will wait forever for a response
+         */
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener);
+        Thread deferredProcessingThread = new Thread(deferredSyslog);
+        deferredProcessingThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send message to the RELP server.
+        final RelpConnection relpConnection = new RelpConnection();
+        final int port = 1601;
+        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        final RelpBatch relpBatch = new RelpBatch();
+        long reqId1 = relpBatch.insert("Hello World! 1".getBytes(StandardCharsets.UTF_8));
+        long reqId2 = relpBatch.insert("Hello World! 2".getBytes(StandardCharsets.UTF_8));
+        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+        // Wait for the AMQP scheduler to flush any remaining batches and close.
+        amqpClient.close();
+        while (amqpMeter.getCount() < 1) {
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        // verify successful transaction
+        Assertions.assertTrue(relpBatch.verifyTransaction(reqId1));
+        Assertions.assertTrue(relpBatch.verifyTransaction(reqId2));
+        Assertions.assertAll(relpConnection::disconnect);
+        relp.close();
+
+        final String partitionId = "0";
+        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
+        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
+        // Read events from partition '0' and returns the first 100 received or until the 10 seconds has elapsed.
+        final IterableStream<PartitionEvent> events = eventHubConsumerClient
+                .receiveFromPartition(partitionId, 2, startingPosition, Duration.ofSeconds(10));
+
+        final Iterator<PartitionEvent> iterator = events.iterator();
+        Assertions.assertTrue(iterator.hasNext());
+        PartitionEvent first = iterator.next();
+        Assertions.assertEquals("Hello World! 1", first.getData().getBodyAsString());
+        PartitionEvent second = iterator.next();
+        Assertions.assertEquals("Hello World! 2", second.getData().getBodyAsString());
+        Assertions.assertFalse(iterator.hasNext());
+        Assertions.assertEquals(2, amqpMeter.getCount());
+        eventHubConsumerClient.close();
+        /*
+         * Stop the deferred processing thread
+         */
+        deferredSyslog.run.set(false);
+        try {
+            deferredProcessingThread.join();
+        }
+        catch (InterruptedException interruptedException) {
+            throw new RuntimeException(interruptedException);
+        }
+    }
+
+    private class DeferredSyslog implements Runnable {
+
+        private final BlockingQueue<FrameContext> frameContexts;
+        private final BlockingQueue<Writeable> processed;
+        private final AMQP amqpClient;
+        private final PublishListener publishListener;
+
+        public final AtomicBoolean run;
+
+        DeferredSyslog(BlockingQueue<FrameContext> frameContexts, AMQP amqpClient, PublishListener publishListener) {
+            this.frameContexts = frameContexts;
+            this.amqpClient = amqpClient;
+            this.publishListener = publishListener;
+            this.processed = new ArrayBlockingQueue<>(1024);
+
+            this.run = new AtomicBoolean(true);
+        }
+
+        @Override
+        public void run() {
+            while (run.get()) {
+                try {
+                    // this will read at least one
+                    FrameContext frameContext = frameContexts.poll(1, TimeUnit.SECONDS);
+
+                    if (frameContext == null) {
+                        // no frame yet
+                        continue;
+                    }
+
+                    // try-with-resources so frame is closed and freed,
+                    try (RelpFrame relpFrame = frameContext.relpFrame()) {
+                        final String messageId = String.valueOf(relpFrame.hashCode());
+                        BufferListener bufferListener = new BufferListenerImpl();
+                        EventData eventData = new EventData(relpFrame.payload().toString());
+                        eventData.setMessageId(messageId);
+                        amqpClient.addEvents(eventData, bufferListener);
+                        while (!bufferListener.complete()) {
+                            Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
+                        }
+                        if (!bufferListener.result()) {
+                            throw new RuntimeException("Failed to add events to EventHub producer client buffer");
+                        }
+
+                        RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
+                        // create a response for the frame
+                        RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
+
+                        // WARNING: failing to respond causes transaction aware clients to wait
+                        Writeable writeable = responseFrame.toWriteable();
+                        processed.add(writeable);
+                        if (!processed.isEmpty() && frameContexts.isEmpty()) {
+                            while (!publishListener.eventPublished(messageId)) {
+                                if (publishListener.eventFailed(messageId)) {
+                                    throw new RuntimeException("Failed to transfer events to EventHub");
+                                }
+                                Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
+                            }
+                            for (Writeable processedWriteable : processed) {
+                                frameContext.establishedContext().egress().accept(processedWriteable);
+                            }
+                        }
+                    }
+                }
+                catch (Exception interruptedException) {
+                    // ignored
+                }
+            }
+
+        }
+    }
+
+    @Test
     void testRelpAndAmqp() {
         final String connectionString = eventHubs.getConnectionString();
 
@@ -116,17 +304,29 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, amqpMeter);
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 5, publishListener, amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
+            // Generate unique messageId based on the relpFrame
+            final String messageId = String.valueOf(frameContext.relpFrame().hashCode());
             BufferListener bufferListener = new BufferListenerImpl();
-            amqpClient.addEvents(new EventData(frameContext.relpFrame().payload().toString()), bufferListener);
+            EventData eventData = new EventData(frameContext.relpFrame().payload().toString());
+            eventData.setMessageId(messageId);
+            amqpClient.addEvents(eventData, bufferListener);
             while (!bufferListener.complete()) {
                 Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
             }
             if (!bufferListener.result()) {
-                throw new RuntimeException("Failed to transfer events to EventHub");
+                throw new RuntimeException("Failed to add events to EventHub producer client buffer");
             }
+            // FIXME: The consumer only processes a single event at a time blocking addition of new events to buffer.
+            /*while (!publishListener.eventPublished(messageId)) {
+                if (publishListener.eventFailed(messageId)) {
+                    throw new RuntimeException("Failed to transfer events to EventHub");
+                }
+                Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
+            }*/
         });
         Thread relpThread = new Thread(relp);
         relpThread.start();
@@ -179,18 +379,37 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, amqpMeter);
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 5, publishListener, amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
-            BufferListener bufferListener = new BufferListenerImpl();
-            amqpClient.addEvents(new EventData(frameContext.relpFrame().payload().toString()), bufferListener);
-            while (!bufferListener.complete()) {
-                Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
+        // this is the frameContext -> {} written in easier to understand consumer form.
+        Consumer<FrameContext> syslogConsumer = new Consumer<FrameContext>() {
+
+            // NOTE: synchronized because frameDelegateSupplier returns this instance for all the parallel connections
+            @Override
+            public synchronized void accept(FrameContext frameContext) {
+                // Generate unique messageId based on the relpFrame
+                final String messageId = String.valueOf(frameContext.relpFrame().hashCode());
+                BufferListener bufferListener = new BufferListenerImpl();
+                EventData eventData = new EventData(frameContext.relpFrame().payload().toString());
+                eventData.setMessageId(messageId);
+                amqpClient.addEvents(eventData, bufferListener);
+                while (!bufferListener.complete()) {
+                    Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
+                }
+                if (!bufferListener.result()) {
+                    throw new RuntimeException("Failed to add events to EventHub producer client buffer");
+                }
+                // FIXME: The consumer only processes a single event at a time blocking addition of new events to buffer.
+                /*while (!publishListener.eventPublished(messageId)) {
+                    if (publishListener.eventFailed(messageId)) {
+                        throw new RuntimeException("Failed to transfer events to EventHub");
+                    }
+                    Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
+                }*/
             }
-            if (!bufferListener.result()) {
-                throw new RuntimeException("Failed to transfer events to EventHub");
-            }
-        });
+        };
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", syslogConsumer);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start
@@ -257,7 +476,8 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 10, amqpMeter);
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 10, publishListener, amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
             BufferListener bufferListener = new BufferListenerImpl();
@@ -337,7 +557,8 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, amqpMeter);
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, publishListener, amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
             BufferListener bufferListener = new BufferListenerImpl();
@@ -418,7 +639,8 @@ public class IntegrationTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, amqpMeter);
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 60, publishListener, amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
             BufferListener bufferListener = new BufferListenerImpl();

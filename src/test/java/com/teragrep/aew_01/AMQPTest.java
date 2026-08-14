@@ -107,7 +107,8 @@ final class AMQPTest {
                 .buildConsumerClient();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = new AMQP(connectionString, "eh1", 1, amqpMeter);
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP client = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
         final List<EventData> allEvents = Arrays
                 .asList(new EventData("Test message one"), new EventData("Test message two"));
         for (EventData eventData : allEvents) {
@@ -150,7 +151,8 @@ final class AMQPTest {
                 .buildConsumerClient();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = new AMQP(connectionString, "eh1", 1, amqpMeter);
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP client = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
             final EventData eventData = new EventData("Test message " + i);
@@ -187,8 +189,9 @@ final class AMQPTest {
         final TokenCredential credential = new ManagedIdentityCredentialBuilder().clientId("testClientId").build();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final PublishListener publishListener = new PublishListenerImpl();
         final AMQP client = Assertions
-                .assertDoesNotThrow(() -> new AMQP(credential, "eh1", "emulatorNs1", 1, amqpMeter));
+                .assertDoesNotThrow(() -> new AMQP(credential, "eh1", "emulatorNs1", 1, publishListener, amqpMeter));
         // .publishEvents() is not supported by the EventHub Emulator when the client has been built using TokenCredential.
         client.close();
     }

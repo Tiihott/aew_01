@@ -60,7 +60,13 @@ public final class AMQP {
     private final EventHubBufferedProducerAsyncClient producerClient;
 
     // Connection using connectionString
-    public AMQP(final String connectionString, final String eventHubName, final long maxBatchTimeS, Meter meter) {
+    public AMQP(
+            final String connectionString,
+            final String eventHubName,
+            final long maxBatchTimeS,
+            PublishListener publishListener,
+            Meter meter
+    ) {
         this.amqpMeter = meter;
         LOGGER
                 .debug(
@@ -71,7 +77,10 @@ public final class AMQP {
                 .connectionString(connectionString, eventHubName)
                 .onSendBatchSucceeded(sendBatch -> {
                     LOGGER.info("Successfully published events to {}: ", sendBatch.getPartitionId());
-                    sendBatch.getEvents().forEach(event -> {
+                    Iterable<EventData> events = sendBatch.getEvents();
+                    events.forEach(event -> {
+                        String messageId = event.getMessageId();
+                        publishListener.eventPublishSuccess(messageId);
                         amqpMeter.mark();
                     });
                 })
@@ -81,6 +90,11 @@ public final class AMQP {
                                     "Failed to publish events to {}. Error: {}",
                                     sendBatchFailedContext.getPartitionId(), sendBatchFailedContext.getThrowable()
                             );
+                    Iterable<EventData> events = sendBatchFailedContext.getEvents();
+                    events.forEach(event -> {
+                        String messageId = event.getMessageId();
+                        publishListener.eventPublishFailed(messageId);
+                    });
                 })
                 .maxWaitTime(Duration.ofSeconds(maxBatchTimeS))
                 .maxEventBufferLengthPerPartition(1500)
@@ -93,6 +107,7 @@ public final class AMQP {
             final String eventHubName,
             final String fullyQualifiedNamespace,
             final long maxBatchTimeS,
+            PublishListener publishListener,
             Meter meter
     ) {
         this.amqpMeter = meter;
@@ -106,8 +121,25 @@ public final class AMQP {
                 .eventHubName(eventHubName)
                 .credential(credential)
                 .onSendBatchSucceeded(sendBatch -> {
+                    LOGGER.info("Successfully published events to {}: ", sendBatch.getPartitionId());
+                    Iterable<EventData> events = sendBatch.getEvents();
+                    events.forEach(event -> {
+                        String messageId = event.getMessageId();
+                        publishListener.eventPublishSuccess(messageId);
+                        amqpMeter.mark();
+                    });
                 })
                 .onSendBatchFailed(sendBatchFailedContext -> {
+                    LOGGER
+                            .error(
+                                    "Failed to publish events to {}. Error: {}",
+                                    sendBatchFailedContext.getPartitionId(), sendBatchFailedContext.getThrowable()
+                            );
+                    Iterable<EventData> events = sendBatchFailedContext.getEvents();
+                    events.forEach(event -> {
+                        String messageId = event.getMessageId();
+                        publishListener.eventPublishFailed(messageId);
+                    });
                 })
                 .maxWaitTime(Duration.ofSeconds(maxBatchTimeS))
                 .maxEventBufferLengthPerPartition(1500)
