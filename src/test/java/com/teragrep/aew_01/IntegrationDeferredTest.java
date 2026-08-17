@@ -216,6 +216,119 @@ public class IntegrationDeferredTest {
         }
     }
 
+    @Test
+    void testDeferredRelpAndAmqpSingleMediumBatch() {
+        /*
+         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
+         */
+
+        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        /*
+         * Add default commands, open and close, they are mandatory
+         */
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+
+        /*
+         * Queue for deferring the processing of the frames
+         */
+        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(1024);
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                frameContexts.add(frameContext);
+            }
+
+            @Override
+            public void close() {
+                frameContexts.clear();
+            }
+        };
+
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
+        final String connectionString = eventHubs.getConnectionString();
+
+        // Create consumer client to assert that producer works as expected.
+        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildConsumerClient();
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 5, publishListener, amqpMeter);
+
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        /*
+         * Start deferred processing, otherwise our client will wait forever for a response
+         */
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener);
+        Thread deferredProcessingThread = new Thread(deferredSyslog);
+        deferredProcessingThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send batch of 1000 messages to the RELP server.
+        final RelpConnection relpConnection = new RelpConnection();
+        final int port = 1601;
+        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        final RelpBatch relpBatch = new RelpBatch();
+        List<Long> reqIds = new ArrayList<>();
+        List<String> expectedPayloads = new ArrayList<>();
+        for (int i = 1; i <= 1000; i++) {
+            String payload = "Hello World " + i;
+            reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+            expectedPayloads.add(payload);
+        }
+
+        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+        // Wait for the AMQP scheduler to flush any remaining batches and close.
+        amqpClient.close();
+        // verify successful transaction
+        for (Long reqId : reqIds) {
+            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+        }
+        Assertions.assertAll(relpConnection::disconnect);
+        relp.close();
+
+        final String partitionId = "0";
+        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
+        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
+        // Read events from partition '0' and returns the first 1000 received or until the 240 seconds has elapsed.
+        final IterableStream<PartitionEvent> events = eventHubConsumerClient
+                .receiveFromPartition(partitionId, 1000, startingPosition, Duration.ofSeconds(240));
+
+        final Iterator<PartitionEvent> iterator = events.iterator();
+        final List<String> resultPayloads = new ArrayList<>();
+        while (iterator.hasNext()) {
+            PartitionEvent event = iterator.next();
+            resultPayloads.add(event.getData().getBodyAsString());
+        }
+        Assertions.assertEquals(1000, amqpMeter.getCount());
+        // Assert that all the expected payloads are present in eventhub results
+        for (String expectedPayload : expectedPayloads) {
+            Assertions
+                    .assertTrue(resultPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+        }
+        eventHubConsumerClient.close();
+        /*
+         * Stop the deferred processing thread
+         */
+        deferredSyslog.run.set(false);
+        try {
+            deferredProcessingThread.join();
+        }
+        catch (InterruptedException interruptedException) {
+            throw new RuntimeException(interruptedException);
+        }
+    }
+
     private class DeferredSyslog implements Runnable {
 
         private final BlockingQueue<FrameContext> frameContexts;
