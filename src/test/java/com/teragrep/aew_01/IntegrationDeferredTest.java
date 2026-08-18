@@ -67,6 +67,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.azure.AzuriteContainer;
@@ -164,12 +165,12 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send message to the RELP server.
+        // send 2 messages to the RELP server.
         final RelpConnection relpConnection = new RelpConnection();
         final int port = 1601;
         Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
@@ -269,7 +270,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -329,6 +330,10 @@ public class IntegrationDeferredTest {
         }
     }
 
+    @EnabledIfSystemProperty(
+            named = "runHeavyTests",
+            matches = "true"
+    )
     @Test
     void testDeferredRelpAndAmqpMultipleMediumBatches() {
         /*
@@ -382,7 +387,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -451,6 +456,10 @@ public class IntegrationDeferredTest {
         }
     }
 
+    @EnabledIfSystemProperty(
+            named = "runHeavyTests",
+            matches = "true"
+    )
     @Test
     void testDeferredRelpAndAmqpSingleLargeBatch() {
         /*
@@ -504,12 +513,12 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 10024);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send batch of 1000 messages to the RELP server.
+        // send batch of 10000 messages to the RELP server.
         final RelpConnection relpConnection = new RelpConnection();
         final int port = 1601;
         Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
@@ -535,7 +544,7 @@ public class IntegrationDeferredTest {
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
         final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from partition '0' and returns the first 1000 received or until the 240 seconds has elapsed.
+        // Read events from partition '0' and returns the first 10000 received or until the 240 seconds has elapsed.
         final IterableStream<PartitionEvent> events = eventHubConsumerClient
                 .receiveFromPartition(partitionId, 10000, startingPosition, Duration.ofSeconds(240));
 
@@ -564,6 +573,123 @@ public class IntegrationDeferredTest {
         }
     }
 
+    @EnabledIfSystemProperty(
+            named = "runVeryHeavyTests",
+            matches = "true"
+    )
+    @Test
+    void testDeferredRelpAndAmqpSingleVeryLargeBatch() {
+        /*
+         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
+         */
+
+        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        /*
+         * Add default commands, open and close, they are mandatory
+         */
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+
+        /*
+         * Queue for deferring the processing of the frames
+         */
+        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(100024);
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                frameContexts.add(frameContext);
+            }
+
+            @Override
+            public void close() {
+                frameContexts.clear();
+            }
+        };
+
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
+        final String connectionString = eventHubs.getConnectionString();
+
+        // Create consumer client to assert that producer works as expected.
+        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildConsumerClient();
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final PublishListener publishListener = new PublishListenerImpl();
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        /*
+         * Start deferred processing, otherwise our client will wait forever for a response
+         */
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 100024);
+        Thread deferredProcessingThread = new Thread(deferredSyslog);
+        deferredProcessingThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send batch of 100000 messages to the RELP server.
+        final RelpConnection relpConnection = new RelpConnection();
+        final int port = 1601;
+        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        final RelpBatch relpBatch = new RelpBatch();
+        List<Long> reqIds = new ArrayList<>();
+        List<String> expectedPayloads = new ArrayList<>();
+        for (int i = 1; i <= 100000; i++) {
+            String payload = "Hello World " + i;
+            reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+            expectedPayloads.add(payload);
+        }
+
+        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+        // Wait for the AMQP scheduler to flush any remaining batches and close.
+        amqpClient.close();
+        // verify successful transaction
+        for (Long reqId : reqIds) {
+            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+        }
+        Assertions.assertAll(relpConnection::disconnect);
+        relp.close();
+
+        final String partitionId = "0";
+        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
+        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
+        // Read events from partition '0' and returns the first 100000 received or until the 2400 seconds has elapsed.
+        final IterableStream<PartitionEvent> events = eventHubConsumerClient
+                .receiveFromPartition(partitionId, 100000, startingPosition, Duration.ofSeconds(2400));
+
+        final Iterator<PartitionEvent> iterator = events.iterator();
+        final List<String> resultPayloads = new ArrayList<>();
+        while (iterator.hasNext()) {
+            PartitionEvent event = iterator.next();
+            resultPayloads.add(event.getData().getBodyAsString());
+        }
+        Assertions.assertEquals(100000, amqpMeter.getCount());
+        // Assert that all the expected payloads are present in eventhub results
+        for (String expectedPayload : expectedPayloads) {
+            Assertions
+                    .assertTrue(resultPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+        }
+        eventHubConsumerClient.close();
+        /*
+         * Stop the deferred processing thread
+         */
+        deferredSyslog.run.set(false);
+        try {
+            deferredProcessingThread.join();
+        }
+        catch (InterruptedException interruptedException) {
+            throw new RuntimeException(interruptedException);
+        }
+    }
+
     private class DeferredSyslog implements Runnable {
 
         private final BlockingQueue<FrameContext> frameContexts;
@@ -573,11 +699,16 @@ public class IntegrationDeferredTest {
 
         public final AtomicBoolean run;
 
-        DeferredSyslog(BlockingQueue<FrameContext> frameContexts, AMQP amqpClient, PublishListener publishListener) {
+        DeferredSyslog(
+                BlockingQueue<FrameContext> frameContexts,
+                AMQP amqpClient,
+                PublishListener publishListener,
+                int capacity
+        ) {
             this.frameContexts = frameContexts;
             this.amqpClient = amqpClient;
             this.publishListener = publishListener;
-            this.processed = new ArrayBlockingQueue<>(10024); // TODO: make capacity configurable
+            this.processed = new ArrayBlockingQueue<>(capacity);
 
             this.run = new AtomicBoolean(true);
         }
