@@ -46,19 +46,15 @@
 package com.teragrep.aew_01;
 
 import com.azure.core.util.IterableStream;
-import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerClient;
 import com.azure.messaging.eventhubs.models.EventPosition;
 import com.azure.messaging.eventhubs.models.PartitionEvent;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.teragrep.net_01.channel.buffer.writable.Writeable;
 import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpCommand;
 import com.teragrep.rlp_01.RelpConnection;
-import com.teragrep.rlp_03.frame.RelpFrame;
-import com.teragrep.rlp_03.frame.RelpFrameFactory;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
@@ -81,8 +77,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IntegrationDeferredTest {
 
@@ -687,89 +681,6 @@ public class IntegrationDeferredTest {
         }
         catch (InterruptedException interruptedException) {
             throw new RuntimeException(interruptedException);
-        }
-    }
-
-    private class DeferredSyslog implements Runnable {
-
-        private final BlockingQueue<FrameContext> frameContexts;
-        private final BlockingQueue<Writeable> processed;
-        private final AMQP amqpClient;
-        private final PublishListener publishListener;
-
-        public final AtomicBoolean run;
-
-        DeferredSyslog(
-                BlockingQueue<FrameContext> frameContexts,
-                AMQP amqpClient,
-                PublishListener publishListener,
-                int capacity
-        ) {
-            this.frameContexts = frameContexts;
-            this.amqpClient = amqpClient;
-            this.publishListener = publishListener;
-            this.processed = new ArrayBlockingQueue<>(capacity);
-
-            this.run = new AtomicBoolean(true);
-        }
-
-        @Override
-        public void run() {
-            while (run.get()) {
-                try {
-                    // this will read at least one
-                    FrameContext frameContext = frameContexts.poll(1, TimeUnit.SECONDS);
-
-                    if (frameContext == null) {
-                        // no frame yet
-                        continue;
-                    }
-
-                    // try-with-resources so frame is closed and freed,
-                    try (RelpFrame relpFrame = frameContext.relpFrame()) {
-                        final String messageId = String.valueOf(relpFrame.hashCode());
-                        BufferListener bufferListener = new BufferListenerImpl();
-                        EventData eventData = new EventData(relpFrame.payload().toString());
-                        eventData.setMessageId(messageId);
-                        amqpClient.addEvents(eventData, bufferListener);
-                        while (!bufferListener.complete()) {
-                            Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
-                        }
-                        if (!bufferListener.result()) {
-                            throw new RuntimeException("Failed to add events to EventHub producer client buffer");
-                        }
-
-                        RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
-                        // create a response for the frame
-                        RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
-
-                        // WARNING: failing to respond causes transaction aware clients to wait
-                        Writeable writeable = responseFrame.toWriteable();
-                        processed.add(writeable);
-                        if (!processed.isEmpty() && frameContexts.isEmpty()) {
-                            while (!publishListener.eventPublished(messageId)) {
-                                if (publishListener.eventFailed(messageId)) {
-                                    throw new RuntimeException("Failed to transfer events to EventHub");
-                                }
-                                Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
-                            }
-                            for (Writeable processedWriteable : processed) {
-                                frameContext.establishedContext().egress().accept(processedWriteable);
-                                boolean remove = processed.remove(processedWriteable);
-                                if (!remove) {
-                                    throw new RuntimeException("Failed to remove events from processed list");
-                                }
-                            }
-                        }
-                    }
-                }
-                catch (Exception interruptedException) {
-                    LOGGER.error("Interrupted while waiting for events to complete", interruptedException);
-                    throw new RuntimeException(interruptedException);
-                    // ignored
-                }
-            }
-
         }
     }
 }
