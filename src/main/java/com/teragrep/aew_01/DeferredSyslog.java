@@ -46,6 +46,7 @@
 package com.teragrep.aew_01;
 
 import com.azure.messaging.eventhubs.EventData;
+import com.codahale.metrics.Meter;
 import com.teragrep.net_01.channel.buffer.writable.Writeable;
 import com.teragrep.rlp_03.frame.RelpFrame;
 import com.teragrep.rlp_03.frame.RelpFrameFactory;
@@ -66,6 +67,7 @@ public class DeferredSyslog implements Runnable {
     private final BlockingQueue<Writeable> processed;
     private final AMQP amqpClient;
     private final PublishListener publishListener;
+    private final Meter relpMeter;
 
     public final AtomicBoolean run;
 
@@ -73,12 +75,14 @@ public class DeferredSyslog implements Runnable {
             BlockingQueue<FrameContext> frameContexts,
             AMQP amqpClient,
             PublishListener publishListener,
-            int capacity
+            int capacity,
+            Meter relpMeter
     ) {
         this.frameContexts = frameContexts;
         this.amqpClient = amqpClient;
         this.publishListener = publishListener;
         this.processed = new ArrayBlockingQueue<>(capacity);
+        this.relpMeter = relpMeter;
 
         this.run = new AtomicBoolean(true);
     }
@@ -102,6 +106,7 @@ public class DeferredSyslog implements Runnable {
                     EventData eventData = new EventData(relpFrame.payload().toString());
                     eventData.setMessageId(messageId);
                     amqpClient.addEvents(eventData, bufferListener);
+                    relpMeter.mark();
                     while (!bufferListener.complete()) {
                         Thread.sleep(100);
                     }

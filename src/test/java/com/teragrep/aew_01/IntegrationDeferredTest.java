@@ -150,6 +150,7 @@ public class IntegrationDeferredTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
         final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
 
@@ -159,7 +160,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -255,6 +256,7 @@ public class IntegrationDeferredTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
         final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
 
@@ -264,7 +266,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -372,6 +374,7 @@ public class IntegrationDeferredTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
         final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
 
@@ -381,7 +384,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -498,6 +501,7 @@ public class IntegrationDeferredTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
         final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
 
@@ -507,7 +511,13 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 10024);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(
+                frameContexts,
+                amqpClient,
+                publishListener,
+                10024,
+                relpMeter
+        );
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -615,6 +625,7 @@ public class IntegrationDeferredTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
         final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
 
@@ -624,7 +635,13 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 100024);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(
+                frameContexts,
+                amqpClient,
+                publishListener,
+                100024,
+                relpMeter
+        );
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start

@@ -47,7 +47,6 @@ package com.teragrep.aew_01;
 
 import com.azure.core.credential.TokenCredential;
 import com.azure.identity.ManagedIdentityCredentialBuilder;
-import com.azure.messaging.eventhubs.EventData;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
@@ -57,6 +56,11 @@ import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
 import com.teragrep.aew_01.config.source.EnvironmentSource;
 import com.teragrep.aew_01.config.source.Sourceable;
+import com.teragrep.rlp_01.RelpCommand;
+import com.teragrep.rlp_03.frame.delegate.FrameContext;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEventOpen;
 import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet;
 import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
@@ -66,6 +70,10 @@ import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
@@ -74,6 +82,33 @@ public class Main {
 
     // Start the server
     public static void main(String[] args) {
+        /*
+         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
+         */
+        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        /*
+         * Add default commands, open and close, they are mandatory
+         */
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+        /*
+         * Queue for deferring the processing of the frames
+         */
+        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(1024);
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                frameContexts.add(frameContext);
+            }
+
+            @Override
+            public void close() {
+                frameContexts.clear();
+            }
+        };
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
         final MetricRegistry metricRegistry = new MetricRegistry();
         final Sourceable configSource = getConfigSource();
         Meter relpMeter = metricRegistry.meter("relpMeter");
@@ -112,27 +147,29 @@ public class Main {
                 publishListener,
                 amqpMeter
         );
+        Thread deferredProcessingThread;
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
+        /*
+         * Start deferred processing before running the RELP server, otherwise our client will wait forever for a response
+         */
+        deferredProcessingThread = new Thread(deferredSyslog);
+        deferredProcessingThread.start();
         try (
-                RELP relp = new RELP(new RelpConfig(configSource).tls(), new RelpConfig(configSource).port(), new RelpConfig(configSource).tlsTruststorePassword(), new RelpConfig(configSource).tlsKeystorePassword(), frameContext -> {
-                    BufferListener bufferListener = new BufferListenerImpl();
-                    amqpClient.addEvents(new EventData(frameContext.relpFrame().payload().toString()), bufferListener);
-                    while (!bufferListener.complete()) {
-                        try {
-                            Thread.sleep(100);
-                        }
-                        catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                    if (!bufferListener.result()) {
-                        throw new RuntimeException("Failed to transfer events to EventHub");
-                    }
-                    relpMeter.mark();
-                })
+                RELP relp = new RELP(new RelpConfig(configSource).tls(), new RelpConfig(configSource).port(), new RelpConfig(configSource).tlsTruststorePassword(), new RelpConfig(configSource).tlsKeystorePassword(), relpCommandConsumerMap);
         ) {
             relp.run();
         }
         amqpClient.close();
+        /*
+         * Stop the deferred processing thread
+         */
+        deferredSyslog.run.set(false);
+        try {
+            deferredProcessingThread.join();
+        }
+        catch (InterruptedException interruptedException) {
+            throw new RuntimeException(interruptedException);
+        }
     }
 
     private static void startMetrics(

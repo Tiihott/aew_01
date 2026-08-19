@@ -54,7 +54,6 @@
       <groupId>com.teragrep</groupId>
       <artifactId>rlp_01</artifactId>
       <version>${teragrep.rlp_01.version}</version>
-      <scope>test</scope>
     </dependency>
     <!-- metrics -->
     <dependency>
