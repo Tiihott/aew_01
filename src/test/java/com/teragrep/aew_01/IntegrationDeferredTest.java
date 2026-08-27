@@ -187,7 +187,7 @@ public class IntegrationDeferredTest {
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
         final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from partition '0' and returns the first 100 received or until the 10 seconds has elapsed.
+        // Read events from partition '0' and returns the first 2 received or until the 10 seconds has elapsed.
         final IterableStream<PartitionEvent> events = eventHubConsumerClient
                 .receiveFromPartition(partitionId, 2, startingPosition, Duration.ofSeconds(10));
 
@@ -346,7 +346,7 @@ public class IntegrationDeferredTest {
         /*
          * Queue for deferring the processing of the frames
          */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(1024);
+        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(10024);
         RelpEvent syslogRelpEvent = new RelpEvent() {
 
             @Override
@@ -384,17 +384,22 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(
+                frameContexts,
+                amqpClient,
+                publishListener,
+                10024,
+                relpMeter
+        );
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
         // send 10 batches of 1000 messages to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
         final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
         int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
+        List<Thread> sendThreads = new LinkedList<>();
         for (int j = 1; j <= 10; j++) {
             final RelpBatch relpBatch = new RelpBatch();
             final List<Long> reqIds = new ArrayList<>();
@@ -403,22 +408,15 @@ public class IntegrationDeferredTest {
                 reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
                 expectedPayloads.add(payload);
             }
-            Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-            // verify successful transaction
-            for (Long reqId : reqIds) {
-                Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
-            }
+            sendThreads.add(sendBatch(port, relpBatch));
             cursor += 1000;
         }
         // Wait for the AMQP scheduler to flush events to eventhub
-        amqpClient.close();
         while (amqpMeter.getCount() < 10000) {
             LOGGER.info("Waiting for events to be received... " + amqpMeter.getCount() + "/10000");
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
-        // verify successful transaction
-
-        Assertions.assertAll(relpConnection::disconnect);
+        amqpClient.close();
         relp.close();
 
         final String partitionId = "0";
@@ -473,7 +471,7 @@ public class IntegrationDeferredTest {
         /*
          * Queue for deferring the processing of the frames
          */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(1024);
+        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(10024);
         RelpEvent syslogRelpEvent = new RelpEvent() {
 
             @Override
@@ -511,17 +509,22 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(
+                frameContexts,
+                amqpClient,
+                publishListener,
+                10024,
+                relpMeter
+        );
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send 10 batches of 1000 messages to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
+        // send 100 batches of 100 messages to the RELP server.
         final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
         int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
+        List<Thread> sendThreads = new LinkedList<>();
         for (int j = 1; j <= 100; j++) {
             final RelpBatch relpBatch = new RelpBatch();
             final List<Long> reqIds = new ArrayList<>();
@@ -530,22 +533,15 @@ public class IntegrationDeferredTest {
                 reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
                 expectedPayloads.add(payload);
             }
-            Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-            // verify successful transaction
-            for (Long reqId : reqIds) {
-                Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
-            }
+            sendThreads.add(sendBatch(port, relpBatch));
             cursor += 100;
         }
         // Wait for the AMQP scheduler to flush events to eventhub
-        amqpClient.close();
         while (amqpMeter.getCount() < 10000) {
             LOGGER.info("Waiting for events to be received... " + amqpMeter.getCount() + "/10000");
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
-        // verify successful transaction
-
-        Assertions.assertAll(relpConnection::disconnect);
+        amqpClient.close();
         relp.close();
 
         final String partitionId = "0";
@@ -578,6 +574,20 @@ public class IntegrationDeferredTest {
         catch (InterruptedException interruptedException) {
             throw new RuntimeException(interruptedException);
         }
+    }
+
+    private Thread sendBatch(int port, RelpBatch relpBatch) {
+        Runnable runnable = () -> {
+            LOGGER.info("Sending batch...");
+            final RelpConnection relpConnection = new RelpConnection();
+            Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+            Assertions.assertDoesNotThrow(() -> relpConnection.commit(relpBatch));
+            Assertions.assertTrue(relpBatch.verifyTransactionAll());
+            Assertions.assertAll(relpConnection::disconnect);
+        };
+        Thread thread = new Thread(runnable);
+        thread.start();
+        return thread;
     }
 
     @EnabledIfSystemProperty(
