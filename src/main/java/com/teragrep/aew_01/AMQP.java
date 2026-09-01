@@ -52,12 +52,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class AMQP {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQP.class);
     private final Meter amqpMeter;
     private final EventHubBufferedProducerAsyncClient producerClient;
+    private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     // Connection using connectionString
     public AMQP(
@@ -146,16 +150,19 @@ public final class AMQP {
                 .buildAsyncClient();
     }
 
-    public void addEvents(final EventData eventData, BufferListener bufferListener) {
-        producerClient.enqueueEvent(eventData).subscribe(numberOfEvents -> {
-            LOGGER.info("There are currently: {} events in buffer.", numberOfEvents);
-        }, error -> {
-            LOGGER.error("Error occurred enqueueing events: ", error);
-            bufferListener.onFailure();
-        }, () -> {
-            LOGGER.info("Events successfully enqueued.");
-            bufferListener.onSuccess();
-        });
+    public CompletableFuture<Integer> addEvents(final EventData eventData, BufferListener bufferListener) {
+        CompletableFuture<Integer> future = producerClient.enqueueEvent(eventData).toFuture();
+        future.whenCompleteAsync((result, throwable) -> {
+            if (throwable != null) {
+                LOGGER.error("Error occurred enqueueing events: ", throwable);
+                bufferListener.onFailure();
+            }
+            else {
+                LOGGER.info("Events successfully enqueued. Currently {} messages are in queue.", result);
+                bufferListener.onSuccess();
+            }
+        }, virtualThreadExecutor);
+        return future;
     }
 
     public void close() {

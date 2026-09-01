@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -101,23 +102,19 @@ public class DeferredSyslog implements Runnable {
 
                 // try-with-resources so frame is closed and freed,
                 try (RelpFrame relpFrame = frameContext.relpFrame()) {
-                    final String messageId = String.valueOf(relpFrame.hashCode());
+                    int establishedContextId = System.identityHashCode(frameContext.establishedContext());
+                    int relpFrameId = System.identityHashCode(relpFrame);
+                    final String messageId = String.valueOf(relpFrame.hashCode()); // FIXME: relpFrame.hashCode() is not unique. Try timestamp etc to produce unique id.
                     BufferListener bufferListener = new BufferListenerImpl();
                     EventData eventData = new EventData(relpFrame.payload().toString());
                     eventData.setMessageId(messageId);
-                    amqpClient.addEvents(eventData, bufferListener);
+                    CompletableFuture<Integer> integerCompletableFuture = amqpClient
+                            .addEvents(eventData, bufferListener);
                     relpMeter.mark();
-                    while (!bufferListener.complete()) {
-                        Thread.sleep(100);
-                    }
-                    if (!bufferListener.result()) {
-                        throw new RuntimeException("Failed to add events to EventHub producer client buffer");
-                    }
 
                     RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
                     // create a response for the frame
                     RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
-
                     // WARNING: failing to respond causes transaction aware clients to wait
                     Writeable writeable = responseFrame.toWriteable();
                     processed.add(writeable);
