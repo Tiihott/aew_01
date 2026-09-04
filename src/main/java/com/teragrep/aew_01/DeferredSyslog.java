@@ -54,10 +54,7 @@ import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DeferredSyslog implements Runnable {
@@ -65,7 +62,6 @@ public class DeferredSyslog implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeferredSyslog.class);
 
     private final BlockingQueue<FrameContext> frameContexts;
-    private final BlockingQueue<Writeable> processed;
     private final AMQP amqpClient;
     private final PublishListener publishListener;
     private final Meter relpMeter;
@@ -82,7 +78,6 @@ public class DeferredSyslog implements Runnable {
         this.frameContexts = frameContexts;
         this.amqpClient = amqpClient;
         this.publishListener = publishListener;
-        this.processed = new ArrayBlockingQueue<>(capacity);
         this.relpMeter = relpMeter;
 
         this.run = new AtomicBoolean(true);
@@ -104,35 +99,22 @@ public class DeferredSyslog implements Runnable {
                 try (RelpFrame relpFrame = frameContext.relpFrame()) {
                     int establishedContextId = System.identityHashCode(frameContext.establishedContext());
                     int relpFrameId = System.identityHashCode(relpFrame);
-                    final String messageId = String.valueOf(relpFrame.hashCode()); // FIXME: relpFrame.hashCode() is not unique. Try timestamp etc to produce unique id.
-                    BufferListener bufferListener = new BufferListenerImpl();
+                    final String messageId = String.valueOf(relpFrame.hashCode()); // FIXME: relpFrame.hashCode() is not unique enough. Try timestamp etc to produce unique id.
                     EventData eventData = new EventData(relpFrame.payload().toString());
                     eventData.setMessageId(messageId);
-                    CompletableFuture<Integer> integerCompletableFuture = amqpClient
-                            .addEvents(eventData, bufferListener);
-                    relpMeter.mark();
-
+                    // Create a response for the frame, the writeable must be constructed outside the CompletableFuture.
                     RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
-                    // create a response for the frame
                     RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
-                    // WARNING: failing to respond causes transaction aware clients to wait
                     Writeable writeable = responseFrame.toWriteable();
-                    processed.add(writeable);
-                    if (!processed.isEmpty() && frameContexts.isEmpty()) {
-                        while (!publishListener.eventPublished(messageId)) {
-                            if (publishListener.eventFailed(messageId)) {
-                                throw new RuntimeException("Failed to transfer events to EventHub");
-                            }
-                            Thread.sleep(100);
-                        }
-                        for (Writeable processedWriteable : processed) {
-                            frameContext.establishedContext().egress().accept(processedWriteable);
-                            boolean remove = processed.remove(processedWriteable);
-                            if (!remove) {
-                                throw new RuntimeException("Failed to remove events from processed list");
-                            }
-                        }
-                    }
+                    CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
+                        frameContext.establishedContext().egress().accept(writeable);
+                        relpMeter.mark();
+                        return true;
+                    });
+                    // Add the message to the waiting list for publishing along with the prepared response to RELP client
+                    publishListener.eventWaiting(messageId, acceptTransactionFuture);
+                    // Start publishing process
+                    amqpClient.addEvents(eventData, publishListener);
                 }
             }
             catch (Exception interruptedException) {

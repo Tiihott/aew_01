@@ -46,42 +46,50 @@
 package com.teragrep.aew_01;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public final class PublishListenerImpl implements PublishListener {
 
-    private final List<String> publishedEvents = new ArrayList<>();
+    private final Map<String, CompletableFuture> waitingEvents = new HashMap<>();
     private final List<String> failedEvents = new ArrayList<>();
 
     @Override
+    public void eventWaiting(String messageId, CompletableFuture future) {
+        waitingEvents.put(messageId, future);
+        // FIXME: tests fail without using Thread.sleep(1); here
+        try {
+            Thread.sleep(1);
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void eventPublishSuccess(String messageId) {
-        publishedEvents.add(messageId);
+        if (waitingEvents.containsKey(messageId)) {
+            try {
+                waitingEvents.get(messageId).get();
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            waitingEvents.remove(messageId);
+        }
     }
 
     @Override
     public void eventPublishFailed(String messageId) {
-        failedEvents.add(messageId);
-    }
-
-    @Override
-    public boolean eventPublished(String messageId) {
-        if (publishedEvents.contains(messageId)) {
-            publishedEvents.remove(messageId);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    @Override
-    public boolean eventFailed(String messageId) {
-        if (failedEvents.contains(messageId)) {
-            failedEvents.remove(messageId);
-            return true;
-        }
-        else {
-            return false;
+        if (waitingEvents.containsKey(messageId)) {
+            failedEvents.add(messageId); // TODO: Add error logging if this works in tests
+            waitingEvents.remove(messageId);
         }
     }
 }

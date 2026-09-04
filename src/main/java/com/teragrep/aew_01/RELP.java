@@ -80,7 +80,7 @@ public final class RELP implements Runnable, AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RELP.class);
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(1);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(8);
     private final EventLoop eventLoop;
     private final Thread eventLoopThread;
 

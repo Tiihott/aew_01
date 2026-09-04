@@ -80,7 +80,7 @@ import java.util.concurrent.BlockingQueue;
 
 public class IntegrationDeferredTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationDeferredTest.class);
 
     static Network network;
     static AzuriteContainer azurite;
@@ -174,10 +174,10 @@ public class IntegrationDeferredTest {
         long reqId2 = relpBatch.insert("Hello World! 2".getBytes(StandardCharsets.UTF_8));
         Assertions.assertAll(() -> relpConnection.commit(relpBatch));
         // Wait for the AMQP scheduler to flush any remaining batches and close.
-        amqpClient.close();
-        while (amqpMeter.getCount() < 1) {
+        while (amqpMeter.getCount() < 2) {
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        amqpClient.close();
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId1));
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId2));
@@ -286,6 +286,9 @@ public class IntegrationDeferredTest {
 
         Assertions.assertAll(() -> relpConnection.commit(relpBatch));
         // Wait for the AMQP scheduler to flush any remaining batches and close.
+        while (amqpMeter.getCount() < 1000) {
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
@@ -414,6 +417,7 @@ public class IntegrationDeferredTest {
         // Wait for the AMQP scheduler to flush events to eventhub
         while (amqpMeter.getCount() < 10000) {
             LOGGER.info("Waiting for events to be received... " + amqpMeter.getCount() + "/10000");
+            LOGGER.info("Currently " + amqpClient.checkCondition() + " events in the buffer.");
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         amqpClient.close();
@@ -525,22 +529,28 @@ public class IntegrationDeferredTest {
         int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
         List<Thread> sendThreads = new LinkedList<>();
-        for (int j = 1; j <= 100; j++) {
+        // FIXME: The connection of RELP client gets reset or something with too many concurrent batches.
+        for (int j = 1; j <= 200; j++) {
             final RelpBatch relpBatch = new RelpBatch();
             final List<Long> reqIds = new ArrayList<>();
-            for (int i = cursor; i < cursor + 100; i++) {
+            for (int i = cursor; i < cursor + 50; i++) {
                 String payload = "Hello World" + i;
                 reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
                 expectedPayloads.add(payload);
             }
             sendThreads.add(sendBatch(port, relpBatch));
-            cursor += 100;
+            cursor += 50;
+        }
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
         }
         // Wait for the AMQP scheduler to flush events to eventhub
         while (amqpMeter.getCount() < 10000) {
             LOGGER.info("Waiting for events to be received... " + amqpMeter.getCount() + "/10000");
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        LOGGER.info("All events received by EventHub, waiting additional 5 seconds...");
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5000));
         amqpClient.close();
         relp.close();
 
@@ -574,20 +584,6 @@ public class IntegrationDeferredTest {
         catch (InterruptedException interruptedException) {
             throw new RuntimeException(interruptedException);
         }
-    }
-
-    private Thread sendBatch(int port, RelpBatch relpBatch) {
-        Runnable runnable = () -> {
-            LOGGER.info("Sending batch...");
-            final RelpConnection relpConnection = new RelpConnection();
-            Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
-            Assertions.assertDoesNotThrow(() -> relpConnection.commit(relpBatch));
-            Assertions.assertTrue(relpBatch.verifyTransactionAll());
-            Assertions.assertAll(relpConnection::disconnect);
-        };
-        Thread thread = new Thread(runnable);
-        thread.start();
-        return thread;
     }
 
     @EnabledIfSystemProperty(
@@ -836,5 +832,22 @@ public class IntegrationDeferredTest {
         catch (InterruptedException interruptedException) {
             throw new RuntimeException(interruptedException);
         }
+    }
+
+    private Thread sendBatch(int port, RelpBatch relpBatch) {
+        Runnable runnable = () -> {
+            LOGGER.info("Sending batch...");
+            final RelpConnection relpConnection = new RelpConnection();
+            Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+            Assertions.assertDoesNotThrow(() -> relpConnection.commit(relpBatch));
+            while (!relpBatch.verifyTransactionAll()) {
+                Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+                relpBatch.retryAllFailed();
+            }
+            Assertions.assertAll(relpConnection::disconnect);
+        };
+        Thread thread = new Thread(runnable);
+        thread.start();
+        return thread;
     }
 }

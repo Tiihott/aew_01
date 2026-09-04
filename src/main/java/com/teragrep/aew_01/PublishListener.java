@@ -45,13 +45,13 @@
  */
 package com.teragrep.aew_01;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface PublishListener {
+
+    public void eventWaiting(String messageId, CompletableFuture future);
 
     public void eventPublishSuccess(String messageId);
 
     public void eventPublishFailed(String messageId);
-
-    public boolean eventPublished(String messageId);
-
-    public boolean eventFailed(String messageId);
 }

@@ -95,10 +95,12 @@ public final class AMQP {
                                     sendBatchFailedContext.getPartitionId(), sendBatchFailedContext.getThrowable()
                             );
                     Iterable<EventData> events = sendBatchFailedContext.getEvents();
-                    events.forEach(event -> {
-                        String messageId = event.getMessageId();
-                        publishListener.eventPublishFailed(messageId);
-                    });
+                    if (events != null) {
+                        events.forEach(event -> {
+                            String messageId = event.getMessageId();
+                            publishListener.eventPublishFailed(messageId);
+                        });
+                    }
                 })
                 .maxWaitTime(Duration.ofSeconds(maxBatchTimeS))
                 .maxEventBufferLengthPerPartition(1500)
@@ -150,19 +152,24 @@ public final class AMQP {
                 .buildAsyncClient();
     }
 
-    public CompletableFuture<Integer> addEvents(final EventData eventData, BufferListener bufferListener) {
-        CompletableFuture<Integer> future = producerClient.enqueueEvent(eventData).toFuture();
-        future.whenCompleteAsync((result, throwable) -> {
-            if (throwable != null) {
-                LOGGER.error("Error occurred enqueueing events: ", throwable);
-                bufferListener.onFailure();
-            }
-            else {
-                LOGGER.info("Events successfully enqueued. Currently {} messages are in queue.", result);
-                bufferListener.onSuccess();
-            }
-        }, virtualThreadExecutor);
+    public CompletableFuture<Integer> addEvents(final EventData eventData, final PublishListener publishListener) {
+        CompletableFuture<Integer> future = producerClient
+                .enqueueEvent(eventData)
+                .toFuture()
+                .whenCompleteAsync((result, throwable) -> {
+                    if (throwable != null) {
+                        LOGGER.error("Error occurred enqueueing events: ", throwable);
+                        publishListener.eventPublishFailed(eventData.getMessageId());
+                    }
+                    else {
+                        LOGGER.info("Events successfully enqueued. Currently {} messages are in queue.", result);
+                    }
+                }, virtualThreadExecutor);
         return future;
+    }
+
+    public int checkCondition() {
+        return producerClient.getBufferedEventCount();
     }
 
     public void close() {
