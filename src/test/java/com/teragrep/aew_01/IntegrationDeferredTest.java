@@ -152,7 +152,7 @@ public class IntegrationDeferredTest {
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -258,7 +258,7 @@ public class IntegrationDeferredTest {
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -379,7 +379,7 @@ public class IntegrationDeferredTest {
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -417,7 +417,6 @@ public class IntegrationDeferredTest {
         // Wait for the AMQP scheduler to flush events to eventhub
         while (amqpMeter.getCount() < 10000) {
             LOGGER.info("Waiting for events to be received... " + amqpMeter.getCount() + "/10000");
-            LOGGER.info("Currently " + amqpClient.checkCondition() + " events in the buffer.");
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         amqpClient.close();
@@ -505,7 +504,7 @@ public class IntegrationDeferredTest {
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -636,7 +635,7 @@ public class IntegrationDeferredTest {
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -656,9 +655,7 @@ public class IntegrationDeferredTest {
         // Wait for the server to start
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
         // send batch of 10000 messages to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
         final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
         final RelpBatch relpBatch = new RelpBatch();
         List<Long> reqIds = new ArrayList<>();
         List<String> expectedPayloads = new ArrayList<>();
@@ -667,23 +664,32 @@ public class IntegrationDeferredTest {
             reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
             expectedPayloads.add(payload);
         }
+        List<Thread> sendThreads = new LinkedList<>();
+        sendThreads.add(sendBatch(port, relpBatch));
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
+        }
 
-        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        // Wait for the AMQP scheduler to flush any remaining batches and close.
-        amqpClient.close();
+        // Wait for the AMQP scheduler to flush events to eventhub
+        while (amqpMeter.getCount() < 10000) {
+            LOGGER.info("Waiting for events to be received... " + amqpMeter.getCount() + "/10000");
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        LOGGER.info("All events received by EventHub, waiting additional 5 seconds...");
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5000));
         // verify successful transaction
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         }
-        Assertions.assertAll(relpConnection::disconnect);
         relp.close();
+        amqpClient.close();
 
         final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
         final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
         // Read events from partition '0' and returns the first 10000 received or until the 240 seconds has elapsed.
         final IterableStream<PartitionEvent> events = eventHubConsumerClient
-                .receiveFromPartition(partitionId, 10000, startingPosition, Duration.ofSeconds(240));
+                .receiveFromPartition(partitionId, 10000, startingPosition, Duration.ofSeconds(2400));
 
         final Iterator<PartitionEvent> iterator = events.iterator();
         final List<String> resultPayloads = new ArrayList<>();
@@ -760,7 +766,7 @@ public class IntegrationDeferredTest {
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);

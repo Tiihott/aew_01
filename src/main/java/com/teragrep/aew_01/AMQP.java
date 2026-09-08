@@ -51,8 +51,8 @@ import com.codahale.metrics.Meter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -60,51 +60,20 @@ public final class AMQP {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQP.class);
     private final Meter amqpMeter;
-    private final EventHubBufferedProducerAsyncClient producerClient;
+    private final EventHubProducerAsyncClient producerClient;
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     // Connection using connectionString
-    public AMQP(
-            final String connectionString,
-            final String eventHubName,
-            final long maxBatchTimeS,
-            PublishListener publishListener,
-            Meter meter
-    ) {
+    public AMQP(final String connectionString, final String eventHubName, Meter meter) {
         this.amqpMeter = meter;
         LOGGER
                 .debug(
                         "Creating an EventHubProducerClient with Event Hub name <[{}]> and connection string <[{}]>",
                         eventHubName, connectionString
                 );
-        this.producerClient = new EventHubBufferedProducerClientBuilder()
+        this.producerClient = new EventHubClientBuilder()
                 .connectionString(connectionString, eventHubName)
-                .onSendBatchSucceeded(sendBatch -> {
-                    LOGGER.info("Successfully published events to {}: ", sendBatch.getPartitionId());
-                    Iterable<EventData> events = sendBatch.getEvents();
-                    events.forEach(event -> {
-                        String messageId = event.getMessageId();
-                        publishListener.eventPublishSuccess(messageId);
-                        amqpMeter.mark();
-                    });
-                })
-                .onSendBatchFailed(sendBatchFailedContext -> {
-                    LOGGER
-                            .error(
-                                    "Failed to publish events to {}. Error: {}",
-                                    sendBatchFailedContext.getPartitionId(), sendBatchFailedContext.getThrowable()
-                            );
-                    Iterable<EventData> events = sendBatchFailedContext.getEvents();
-                    if (events != null) {
-                        events.forEach(event -> {
-                            String messageId = event.getMessageId();
-                            publishListener.eventPublishFailed(messageId);
-                        });
-                    }
-                })
-                .maxWaitTime(Duration.ofSeconds(maxBatchTimeS))
-                .maxEventBufferLengthPerPartition(1500)
-                .buildAsyncClient();
+                .buildAsyncProducerClient();
     }
 
     // Connection using TokenCredential
@@ -112,8 +81,6 @@ public final class AMQP {
             final TokenCredential credential,
             final String eventHubName,
             final String fullyQualifiedNamespace,
-            final long maxBatchTimeS,
-            PublishListener publishListener,
             Meter meter
     ) {
         this.amqpMeter = meter;
@@ -122,54 +89,38 @@ public final class AMQP {
                         "Creating an EventHubProducerClient with namespace <[{}]> and Event Hub name <[{}]>",
                         fullyQualifiedNamespace, eventHubName
                 );
-        this.producerClient = new EventHubBufferedProducerClientBuilder()
+        this.producerClient = new EventHubClientBuilder()
                 .fullyQualifiedNamespace(fullyQualifiedNamespace)
                 .eventHubName(eventHubName)
                 .credential(credential)
-                .onSendBatchSucceeded(sendBatch -> {
-                    LOGGER.info("Successfully published events to {}: ", sendBatch.getPartitionId());
-                    Iterable<EventData> events = sendBatch.getEvents();
-                    events.forEach(event -> {
-                        String messageId = event.getMessageId();
-                        publishListener.eventPublishSuccess(messageId);
-                        amqpMeter.mark();
-                    });
-                })
-                .onSendBatchFailed(sendBatchFailedContext -> {
-                    LOGGER
-                            .error(
-                                    "Failed to publish events to {}. Error: {}",
-                                    sendBatchFailedContext.getPartitionId(), sendBatchFailedContext.getThrowable()
-                            );
-                    Iterable<EventData> events = sendBatchFailedContext.getEvents();
-                    events.forEach(event -> {
-                        String messageId = event.getMessageId();
-                        publishListener.eventPublishFailed(messageId);
-                    });
-                })
-                .maxWaitTime(Duration.ofSeconds(maxBatchTimeS))
-                .maxEventBufferLengthPerPartition(1500)
-                .buildAsyncClient();
+                .buildAsyncProducerClient();
     }
 
-    public CompletableFuture<Integer> addEvents(final EventData eventData, final PublishListener publishListener) {
-        CompletableFuture<Integer> future = producerClient
-                .enqueueEvent(eventData)
-                .toFuture()
-                .whenCompleteAsync((result, throwable) -> {
-                    if (throwable != null) {
-                        LOGGER.error("Error occurred enqueueing events: ", throwable);
-                        publishListener.eventPublishFailed(eventData.getMessageId());
-                    }
-                    else {
-                        LOGGER.info("Events successfully enqueued. Currently {} messages are in queue.", result);
-                    }
-                }, virtualThreadExecutor);
+    public CompletableFuture<Void> addEvents(final EventData eventData, CompletableFuture<Boolean> futureAck) {
+        CompletableFuture<Void> future = producerClient.createBatch().flatMap(batch -> {
+            batch.tryAdd(eventData);
+            return producerClient.send(batch);
+        }).toFuture().whenCompleteAsync((Void, throwable) -> {
+            if (throwable != null) {
+                LOGGER.error("Error occurred publishing event: ", throwable);
+            }
+            else {
+                try {
+                    futureAck.get();
+                    amqpMeter.mark();
+                }
+                catch (InterruptedException e) {
+                    LOGGER.error("Error occurred publishing event: ", e);
+                    throw new RuntimeException(e);
+                }
+                catch (ExecutionException e) {
+                    LOGGER.error("Error occurred publishing event: ", e);
+                    throw new RuntimeException(e);
+                }
+                LOGGER.info("Event successfully published.");
+            }
+        }, virtualThreadExecutor);
         return future;
-    }
-
-    public int checkCondition() {
-        return producerClient.getBufferedEventCount();
     }
 
     public void close() {

@@ -143,8 +143,6 @@ public class Main {
                 credential,
                 new AmqpConfig(configSource).eventHubName(),
                 new AmqpConfig(configSource).namespaceName(),
-                new AmqpConfig(configSource).maxBatchTimeS(),
-                publishListener,
                 amqpMeter
         );
         Thread deferredProcessingThread;

@@ -97,11 +97,7 @@ public class DeferredSyslog implements Runnable {
 
                 // try-with-resources so frame is closed and freed,
                 try (RelpFrame relpFrame = frameContext.relpFrame()) {
-                    int establishedContextId = System.identityHashCode(frameContext.establishedContext());
-                    int relpFrameId = System.identityHashCode(relpFrame);
-                    final String messageId = String.valueOf(relpFrame.hashCode()); // FIXME: relpFrame.hashCode() is not unique enough. Try timestamp etc to produce unique id.
                     EventData eventData = new EventData(relpFrame.payload().toString());
-                    eventData.setMessageId(messageId);
                     // Create a response for the frame, the writeable must be constructed outside the CompletableFuture.
                     RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
                     RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
@@ -111,10 +107,8 @@ public class DeferredSyslog implements Runnable {
                         relpMeter.mark();
                         return true;
                     });
-                    // Add the message to the waiting list for publishing along with the prepared response to RELP client
-                    publishListener.eventWaiting(messageId, acceptTransactionFuture);
                     // Start publishing process
-                    amqpClient.addEvents(eventData, publishListener);
+                    amqpClient.addEvents(eventData, acceptTransactionFuture);
                 }
             }
             catch (Exception interruptedException) {

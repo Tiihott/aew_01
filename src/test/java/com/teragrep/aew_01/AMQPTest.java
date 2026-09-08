@@ -67,6 +67,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 final class AMQPTest {
 
@@ -108,11 +109,14 @@ final class AMQPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP client = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+        final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
         final List<EventData> allEvents = Arrays
                 .asList(new EventData("Test message one"), new EventData("Test message two"));
         for (EventData eventData : allEvents) {
-            client.addEvents(eventData, publishListener);
+            CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
+                return true;
+            });
+            client.addEvents(eventData, acceptTransactionFuture);
         }
         // Wait and .close() for the AMQP client to flush any remaining batches
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
@@ -151,12 +155,14 @@ final class AMQPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP client = new AMQP(connectionString, "eh1", 1, publishListener, amqpMeter);
+        final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
+            CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
+                return true;
+            });
             final EventData eventData = new EventData("Test message " + i);
-            client.addEvents(eventData, publishListener);
-            ;
+            client.addEvents(eventData, acceptTransactionFuture);
             expectedEvents.add(eventData);
         }
         // Wait and .close() for the AMQP client to flush any remaining batches
@@ -188,8 +194,7 @@ final class AMQPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final PublishListener publishListener = new PublishListenerImpl();
-        final AMQP client = Assertions
-                .assertDoesNotThrow(() -> new AMQP(credential, "eh1", "emulatorNs1", 1, publishListener, amqpMeter));
+        final AMQP client = Assertions.assertDoesNotThrow(() -> new AMQP(credential, "eh1", "emulatorNs1", amqpMeter));
         // .publishEvents() is not supported by the EventHub Emulator when the client has been built using TokenCredential.
         client.close();
     }
