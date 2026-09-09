@@ -160,7 +160,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -269,7 +269,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -390,13 +390,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(
-                frameContexts,
-                amqpClient,
-                publishListener,
-                10024,
-                relpMeter
-        );
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -522,13 +516,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(
-                frameContexts,
-                amqpClient,
-                publishListener,
-                10024,
-                relpMeter
-        );
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -656,13 +644,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(
-                frameContexts,
-                amqpClient,
-                publishListener,
-                10024,
-                relpMeter
-        );
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
@@ -791,13 +773,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(
-                frameContexts,
-                amqpClient,
-                publishListener,
-                100024,
-                relpMeter
-        );
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start

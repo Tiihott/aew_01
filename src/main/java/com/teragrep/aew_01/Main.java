@@ -146,7 +146,7 @@ public class Main {
                 amqpMeter
         );
         Thread deferredProcessingThread;
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, publishListener, 1024, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         /*
          * Start deferred processing before running the RELP server, otherwise our client will wait forever for a response
          */

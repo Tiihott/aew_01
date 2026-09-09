@@ -63,21 +63,13 @@ public class DeferredSyslog implements Runnable {
 
     private final BlockingQueue<FrameContext> frameContexts;
     private final AMQP amqpClient;
-    private final PublishListener publishListener;
     private final Meter relpMeter;
 
     public final AtomicBoolean run;
 
-    DeferredSyslog(
-            BlockingQueue<FrameContext> frameContexts,
-            AMQP amqpClient,
-            PublishListener publishListener,
-            int capacity,
-            Meter relpMeter
-    ) {
+    DeferredSyslog(BlockingQueue<FrameContext> frameContexts, AMQP amqpClient, Meter relpMeter) {
         this.frameContexts = frameContexts;
         this.amqpClient = amqpClient;
-        this.publishListener = publishListener;
         this.relpMeter = relpMeter;
 
         this.run = new AtomicBoolean(true);
