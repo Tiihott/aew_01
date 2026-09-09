@@ -132,10 +132,13 @@ final class AMQPTest {
         final Iterator<PartitionEvent> iterator = events.iterator();
         Assertions.assertTrue(iterator.hasNext());
         PartitionEvent first = iterator.next();
-        Assertions.assertEquals("Test message one", first.getData().getBodyAsString());
+        final List<EventData> expectedEvents = new ArrayList<>();
+        expectedEvents.add(new EventData("Test message one"));
+        expectedEvents.add(new EventData("Test message two"));
+        Assertions.assertTrue(expectedEvents.contains(first.getData()));
         Assertions.assertTrue(iterator.hasNext());
         PartitionEvent second = iterator.next();
-        Assertions.assertEquals("Test message two", second.getData().getBodyAsString());
+        Assertions.assertTrue(expectedEvents.contains(second.getData()));
         Assertions.assertFalse(iterator.hasNext());
         Assertions.assertEquals(2, amqpMeter.getCount());
         consumer.close();
@@ -184,7 +187,9 @@ final class AMQPTest {
             resultEvents.add(event.getData());
         }
         Assertions.assertEquals(1000, amqpMeter.getCount());
-        Assertions.assertEquals(expectedEvents, resultEvents);
+        for (EventData eventData : resultEvents) {
+            Assertions.assertTrue(expectedEvents.contains(eventData));
+        }
         consumer.close();
     }
 

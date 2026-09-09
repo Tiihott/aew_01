@@ -102,12 +102,18 @@ public final class AMQP {
             return producerClient.send(batch);
         }).toFuture().whenCompleteAsync((Void, throwable) -> {
             if (throwable != null) {
-                LOGGER.error("Error occurred publishing event: ", throwable);
+                LOGGER.error("Error occurred publishing event: {}", throwable.getMessage());
             }
             else {
                 try {
-                    futureAck.get();
-                    amqpMeter.mark();
+                    boolean success = futureAck.get();
+                    if (success) {
+                        amqpMeter.mark();
+                        LOGGER.debug("Successfully published event: {}", eventData.getBodyAsString());
+                    }
+                    else {
+                        LOGGER.error("Error occurred publishing event: {}", eventData.getBodyAsString());
+                    }
                 }
                 catch (InterruptedException e) {
                     LOGGER.error("Error occurred publishing event: ", e);
@@ -117,7 +123,6 @@ public final class AMQP {
                     LOGGER.error("Error occurred publishing event: ", e);
                     throw new RuntimeException(e);
                 }
-                LOGGER.info("Event successfully published.");
             }
         }, virtualThreadExecutor);
         return future;

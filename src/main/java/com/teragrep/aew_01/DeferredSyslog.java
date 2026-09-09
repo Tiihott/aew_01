@@ -96,20 +96,25 @@ public class DeferredSyslog implements Runnable {
                 }
 
                 // try-with-resources so frame is closed and freed,
-                try (RelpFrame relpFrame = frameContext.relpFrame()) {
-                    EventData eventData = new EventData(relpFrame.payload().toString());
-                    // Create a response for the frame, the writeable must be constructed outside the CompletableFuture.
+                RelpFrame relpFrame = frameContext.relpFrame();
+                EventData eventData = new EventData(relpFrame.payload().toString());
+                CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
                     RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
                     RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
                     Writeable writeable = responseFrame.toWriteable();
-                    CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
-                        frameContext.establishedContext().egress().accept(writeable);
-                        relpMeter.mark();
-                        return true;
-                    });
-                    // Start publishing process
-                    amqpClient.addEvents(eventData, acceptTransactionFuture);
-                }
+                    frameContext.establishedContext().egress().accept(writeable);
+                    relpFrame.close();
+                    relpMeter.mark();
+                    return true;
+                }).exceptionally(ex -> {
+                    // Exception handling logic
+                    LOGGER.error("Error occurred publishing event: {}", ex.getMessage());
+                    relpFrame.close();
+                    return false;
+                });
+                // Start publishing process
+                amqpClient.addEvents(eventData, acceptTransactionFuture);
+
             }
             catch (Exception interruptedException) {
                 LOGGER.error("Interrupted while waiting for events to complete", interruptedException);
