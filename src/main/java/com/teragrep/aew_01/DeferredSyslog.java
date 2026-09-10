@@ -94,7 +94,11 @@ public class DeferredSyslog implements Runnable {
                     RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
                     RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
                     Writeable writeable = responseFrame.toWriteable();
-                    frameContext.establishedContext().egress().accept(writeable);
+                    try {
+                        frameContext.establishedContext().egress().accept(writeable);
+                    }catch (Exception e) {
+                        LOGGER.error("Exception while writing response", e);
+                    }
                     relpFrame.close();
                     relpMeter.mark();
                     return true;

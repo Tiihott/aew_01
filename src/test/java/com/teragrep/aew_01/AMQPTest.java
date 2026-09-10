@@ -122,24 +122,21 @@ final class AMQPTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
         client.close();
 
-        final String partitionId = "0";
         final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
         final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from partition '0' and returns the first 100 received or until the 30 seconds has elapsed.
-        final IterableStream<PartitionEvent> events = consumer
-                .receiveFromPartition(partitionId, 2, startingPosition, Duration.ofSeconds(10));
-
-        final Iterator<PartitionEvent> iterator = events.iterator();
-        Assertions.assertTrue(iterator.hasNext());
-        PartitionEvent first = iterator.next();
-        final List<EventData> expectedEvents = new ArrayList<>();
-        expectedEvents.add(new EventData("Test message one"));
-        expectedEvents.add(new EventData("Test message two"));
-        Assertions.assertTrue(expectedEvents.contains(first.getData()));
-        Assertions.assertTrue(iterator.hasNext());
-        PartitionEvent second = iterator.next();
-        Assertions.assertTrue(expectedEvents.contains(second.getData()));
-        Assertions.assertFalse(iterator.hasNext());
+        // Read events from all partitions
+        IterableStream<String> partitionIds = consumer.getPartitionIds();
+        List<String> receivedPayloads = new ArrayList<>();
+        partitionIds.forEach(partitionId -> {
+            final IterableStream<PartitionEvent> events = consumer
+                    .receiveFromPartition(partitionId, 2, startingPosition, Duration.ofSeconds(1));
+            for (PartitionEvent event : events) {
+                receivedPayloads.add(event.getData().getBodyAsString());
+            }
+        });
+        Assertions.assertEquals(2, receivedPayloads.size());
+        Assertions.assertTrue(receivedPayloads.contains("Test message one"));
+        Assertions.assertTrue(receivedPayloads.contains("Test message two"));
         Assertions.assertEquals(2, amqpMeter.getCount());
         consumer.close();
     }
