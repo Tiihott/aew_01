@@ -7,7 +7,7 @@
         "Entities": [
           {
             "Name": "eh1",
-            "PartitionCount": "1",
+            "PartitionCount": "32",
             "ConsumerGroups": [
               {
                 "Name": "cg1"
