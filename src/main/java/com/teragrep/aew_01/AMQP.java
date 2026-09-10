@@ -109,10 +109,10 @@ public final class AMQP {
                     boolean success = futureAck.get();
                     if (success) {
                         amqpMeter.mark();
-                        LOGGER.debug("Successfully published event: {}", eventData.getBodyAsString());
+                        LOGGER.debug("Successfully published event");
                     }
                     else {
-                        LOGGER.error("Error occurred publishing event: {}", eventData.getBodyAsString());
+                        LOGGER.error("Error occurred publishing event");
                     }
                 }
                 catch (InterruptedException e) {
