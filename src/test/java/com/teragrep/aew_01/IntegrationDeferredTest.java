@@ -45,12 +45,9 @@
  */
 package com.teragrep.aew_01;
 
-import com.azure.core.util.IterableStream;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerAsyncClient;
 import com.azure.messaging.eventhubs.EventHubConsumerClient;
-import com.azure.messaging.eventhubs.models.EventPosition;
-import com.azure.messaging.eventhubs.models.PartitionEvent;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.rlp_01.RelpBatch;
@@ -74,8 +71,6 @@ import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -111,6 +106,23 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqp() {
+
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
         /*
          * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
          */
@@ -154,7 +166,6 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final PublishListener publishListener = new PublishListenerImpl();
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
@@ -180,28 +191,26 @@ public class IntegrationDeferredTest {
         long reqId2 = relpBatch.insert("Hello World! 2".getBytes(StandardCharsets.UTF_8));
         Assertions.assertAll(() -> relpConnection.commit(relpBatch));
         // Wait for the AMQP scheduler to flush any remaining batches and close.
-        while (amqpMeter.getCount() < 2) {
+        // Wait for the AMQP to flush all events to eventhub
+        while (amqpMeter.getCount() < 2 || receivedPayloads.size() < 2) {
+            LOGGER.info("Waiting for events to be received AMQP... {}/2", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be received RELP... {}/2", relpMeter.getCount());
+            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        LOGGER
+                .info(
+                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                );
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
         amqpClient.close();
         // verify successful transaction
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId1));
         Assertions.assertTrue(relpBatch.verifyTransaction(reqId2));
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
+        consumer.close();
 
-        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
-        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from all partitions
-        IterableStream<String> partitionIds = eventHubConsumerClient.getPartitionIds();
-        List<String> receivedPayloads = new ArrayList<>();
-        partitionIds.forEach(partitionId -> {
-            final IterableStream<PartitionEvent> events = eventHubConsumerClient
-                    .receiveFromPartition(partitionId, 2, startingPosition, Duration.ofMillis(100));
-            for (PartitionEvent event : events) {
-                receivedPayloads.add(event.getData().getBodyAsString());
-            }
-        });
         Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
         Assertions.assertTrue(expectedPayloads.contains(receivedPayloads.get(0)));
         Assertions.assertTrue(expectedPayloads.contains(receivedPayloads.get(1)));
@@ -221,6 +230,23 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpSingleMediumBatch() {
+
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
         /*
          * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
          */
@@ -291,28 +317,24 @@ public class IntegrationDeferredTest {
         }
 
         Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        // Wait for the AMQP scheduler to flush any remaining batches and close.
-        while (amqpMeter.getCount() < 1000) {
+        // Wait for the AMQP to flush all events to eventhub
+        while (amqpMeter.getCount() < 1000 || receivedPayloads.size() < 1000) {
+            LOGGER.info("Waiting for events to be received AMQP... {}/1000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be received RELP... {}/1000", relpMeter.getCount());
+            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        LOGGER
+                .info(
+                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                );
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         }
 
-        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
-        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from all partitions
-        IterableStream<String> partitionIds = eventHubConsumerClient.getPartitionIds();
-        List<String> receivedPayloads = new ArrayList<>();
-        partitionIds.stream().forEach(partitionId -> {
-            final IterableStream<PartitionEvent> events = eventHubConsumerClient
-                    .receiveFromPartition(partitionId, 1000, startingPosition, Duration.ofMillis(200));
-            for (PartitionEvent event : events) {
-                receivedPayloads.add(event.getData().getBodyAsString());
-            }
-        });
         Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
         Assertions.assertEquals(1000, amqpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
@@ -322,6 +344,7 @@ public class IntegrationDeferredTest {
         }
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
+        consumer.close();
         eventHubConsumerClient.close();
         /*
          * Stop the deferred processing thread
@@ -341,6 +364,23 @@ public class IntegrationDeferredTest {
     )
     @Test
     void testDeferredRelpAndAmqpMultipleMediumBatches() {
+
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
         /*
          * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
          */
@@ -394,7 +434,7 @@ public class IntegrationDeferredTest {
         int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
         List<Thread> sendThreads = new LinkedList<>();
-        for (int j = 1; j <= 2; j++) {
+        for (int j = 1; j <= 10; j++) {
             final RelpBatch relpBatch = new RelpBatch();
             final List<Long> reqIds = new ArrayList<>();
             for (int i = cursor; i < cursor + 1000; i++) {
@@ -404,48 +444,35 @@ public class IntegrationDeferredTest {
             }
             sendThreads.add(sendBatch(port, relpBatch));
             cursor += 1000;
-            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000)); // FIXME: Drops events without sleep, relpMeter/amqpMeter does not reach expected amounts.
         }
-        // Wait for the AMQP scheduler to flush events to eventhub
-        while (amqpMeter.getCount() < 2000) {
-            LOGGER.info("Waiting for events to be received AMQP... " + amqpMeter.getCount() + "/2000");
-            LOGGER.info("Waiting for events to be received RELP... " + relpMeter.getCount() + "/2000");
+        // Wait for the AMQP to flush all events to eventhub
+        while (amqpMeter.getCount() < 10000 || receivedPayloads.size() < 10000) {
+            LOGGER.info("Waiting for events to be received AMQP... {}/10000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be received RELP... {}/10000", relpMeter.getCount());
+            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        LOGGER
+                .info(
+                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                );
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         amqpClient.close();
         relp.close();
 
-        // Create consumer client to assert that producer worked as expected.
-        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
-                .connectionString(eventHubs.getConnectionString())
-                .fullyQualifiedNamespace("emulatorNs1")
-                .eventHubName("eh1")
-                .consumerGroup("cg1")
-                .buildConsumerClient();
-        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
-        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from all partitions
-        final IterableStream<String> partitionIds = eventHubConsumerClient.getPartitionIds();
-        final List<String> receivedPayloads = new ArrayList<>();
-        for (final String partitionId : partitionIds) {
-            final IterableStream<PartitionEvent> events = eventHubConsumerClient
-                    .receiveFromPartition(partitionId, 1000, startingPosition, Duration.ofMillis(200));
-            for (final PartitionEvent event : events) {
-                receivedPayloads.add(event.getData().getBodyAsString());
-            }
-        }
-        Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
-        Assertions.assertEquals(2000, amqpMeter.getCount());
-        Assertions.assertEquals(2000, relpMeter.getCount());
+        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
+        Assertions.assertTrue(10000 <= amqpMeter.getCount());
+        Assertions.assertTrue(10000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
         for (final String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
         }
-        eventHubConsumerClient.close();
+        consumer.close();
         /*
          * Stop the deferred processing thread
          */
@@ -463,6 +490,23 @@ public class IntegrationDeferredTest {
     )
     @Test
     void testDeferredRelpAndAmqp100x100Batches() {
+
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
         /*
          * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
          */
@@ -506,7 +550,6 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final PublishListener publishListener = new PublishListenerImpl();
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
@@ -537,32 +580,29 @@ public class IntegrationDeferredTest {
             cursor += 100;
             Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
         }
-        // Wait for the AMQP scheduler to flush events to eventhub
-        while (amqpMeter.getCount() < 10000) {
-            LOGGER.info("Waiting for events to be received AMQP... " + amqpMeter.getCount() + "/10000");
-            LOGGER.info("Waiting for events to be received RELP... " + relpMeter.getCount() + "/10000");
+        // Wait for the AMQP to flush all events to eventhub
+        while (amqpMeter.getCount() < 10000 || receivedPayloads.size() < 10000) {
+            LOGGER.info("Waiting for events to be received AMQP... {}/10000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be received RELP... {}/10000", relpMeter.getCount());
+            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        LOGGER
+                .info(
+                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                );
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         amqpClient.close();
         relp.close();
+        consumer.close();
 
-        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
-        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from all partitions
-        IterableStream<String> partitionIds = eventHubConsumerClient.getPartitionIds();
-        List<String> receivedPayloads = new ArrayList<>();
-        partitionIds.forEach(partitionId -> {
-            final IterableStream<PartitionEvent> events = eventHubConsumerClient
-                    .receiveFromPartition(partitionId, 1000, startingPosition, Duration.ofMillis(200));
-            for (PartitionEvent event : events) {
-                receivedPayloads.add(event.getData().getBodyAsString());
-            }
-        });
-        Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
-        Assertions.assertEquals(10000, amqpMeter.getCount());
+        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
+        Assertions.assertTrue(10000 <= amqpMeter.getCount());
+        Assertions.assertTrue(10000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
         for (String expectedPayload : expectedPayloads) {
             Assertions
@@ -587,6 +627,23 @@ public class IntegrationDeferredTest {
     )
     @Test
     void testDeferredRelpAndAmqpSingleLargeBatch() {
+
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
         /*
          * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
          */
@@ -651,11 +708,18 @@ public class IntegrationDeferredTest {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
 
-        // Wait for the AMQP scheduler to flush events to eventhub
-        while (amqpMeter.getCount() < 10000) {
-            LOGGER.info("Waiting for events to be received... {}/10000", amqpMeter.getCount());
+        // Wait for the AMQP to flush all events to eventhub
+        while (amqpMeter.getCount() < 10000 || receivedPayloads.size() < 10000) {
+            LOGGER.info("Waiting for events to be received AMQP... {}/10000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be received RELP... {}/10000", relpMeter.getCount());
+            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
+        LOGGER
+                .info(
+                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                );
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
         // verify successful transaction
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
@@ -663,34 +727,16 @@ public class IntegrationDeferredTest {
         relp.close();
         amqpClient.close();
 
-        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
-        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from all partitions
-        // Create consumer client to assert that producer works as expected.
-        List<String> receivedPayloads = new ArrayList<>();
-        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
-                .connectionString(eventHubs.getConnectionString())
-                .fullyQualifiedNamespace("emulatorNs1")
-                .eventHubName("eh1")
-                .consumerGroup("cg1")
-                .buildConsumerClient();
-        IterableStream<String> partitionIds = eventHubConsumerClient.getPartitionIds();
-        partitionIds.forEach(partitionId -> {
-            final IterableStream<PartitionEvent> events = eventHubConsumerClient
-                    .receiveFromPartition(partitionId, 1000, startingPosition, Duration.ofMillis(500));
-            for (PartitionEvent event : events) {
-                receivedPayloads.add(event.getData().getBodyAsString());
-            }
-        });
-        Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
-        Assertions.assertEquals(10000, amqpMeter.getCount());
-        Assertions.assertEquals(10000, relpMeter.getCount());
+        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
+        Assertions.assertTrue(10000 <= amqpMeter.getCount());
+        Assertions.assertTrue(10000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
         for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
         }
-        eventHubConsumerClient.close();
+        consumer.close();
         /*
          * Stop the deferred processing thread
          */
@@ -704,7 +750,7 @@ public class IntegrationDeferredTest {
     }
 
     @EnabledIfSystemProperty(
-            named = "runVeryHeavyTests",
+            named = "runHeavyTests",
             matches = "true"
     )
     @Test
@@ -801,6 +847,11 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+
+        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
+        Assertions.assertTrue(100000 <= amqpMeter.getCount());
+        Assertions.assertTrue(100000 <= relpMeter.getCount());
         // verify successful transaction
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
