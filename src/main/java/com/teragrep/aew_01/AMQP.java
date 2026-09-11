@@ -98,7 +98,9 @@ public final class AMQP {
 
     public CompletableFuture<Void> addEvents(final EventData eventData, CompletableFuture<Boolean> futureAck) {
         CompletableFuture<Void> future = producerClient.createBatch().flatMap(batch -> {
-            batch.tryAdd(eventData);
+            if (!batch.tryAdd(eventData)) {
+                throw new RuntimeException("Something went wrong with adding events to batch.");
+            }
             return producerClient.send(batch);
         }).toFuture().whenCompleteAsync((Void, throwable) -> {
             if (throwable != null) {
