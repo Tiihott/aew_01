@@ -4,6 +4,7 @@
       {
         "Type": "EventHub",
         "Name": "emulatorNs1",
+        "IPFilterRules": [],
         "Entities": [
           {
             "Name": "eh1",
