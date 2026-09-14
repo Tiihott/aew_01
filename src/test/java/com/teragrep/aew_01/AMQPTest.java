@@ -46,30 +46,28 @@
 package com.teragrep.aew_01;
 
 import com.azure.core.credential.TokenCredential;
-import com.azure.core.util.IterableStream;
 import com.azure.identity.ManagedIdentityCredentialBuilder;
 import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
-import com.azure.messaging.eventhubs.EventHubConsumerClient;
-import com.azure.messaging.eventhubs.models.EventPosition;
-import com.azure.messaging.eventhubs.models.PartitionEvent;
+import com.azure.messaging.eventhubs.EventHubConsumerAsyncClient;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.azure.AzuriteContainer;
 import org.testcontainers.azure.EventHubsEmulatorContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.MountableFile;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 final class AMQPTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQPTest.class);
 
     static Network network;
     static AzuriteContainer azurite;
@@ -97,15 +95,24 @@ final class AMQPTest {
 
     @Test
     void testAddEvents() {
-        final String connectionString = eventHubs.getConnectionString();
 
-        // Create consumer client to assert that producer works as expected.
-        final EventHubConsumerClient consumer = new EventHubClientBuilder()
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
                 .connectionString(eventHubs.getConnectionString())
                 .fullyQualifiedNamespace("emulatorNs1")
                 .eventHubName("eh1")
                 .consumerGroup("cg1")
-                .buildConsumerClient();
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
+        final String connectionString = eventHubs.getConnectionString();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
@@ -119,38 +126,35 @@ final class AMQPTest {
         }
         // Wait and .close() for the AMQP client to flush any remaining batches
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
-        client.close();
-
-        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
-        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from all partitions
-        IterableStream<String> partitionIds = consumer.getPartitionIds();
-        List<String> receivedPayloads = new ArrayList<>();
-        partitionIds.forEach(partitionId -> {
-            final IterableStream<PartitionEvent> events = consumer
-                    .receiveFromPartition(partitionId, 2, startingPosition, Duration.ofSeconds(1));
-            for (PartitionEvent event : events) {
-                receivedPayloads.add(event.getData().getBodyAsString());
-            }
-        });
         Assertions.assertEquals(2, receivedPayloads.size());
         Assertions.assertTrue(receivedPayloads.contains("Test message one"));
         Assertions.assertTrue(receivedPayloads.contains("Test message two"));
         Assertions.assertEquals(2, amqpMeter.getCount());
+        client.close();
         consumer.close();
     }
 
     @Test
     void testAddEventsMultiple() {
-        final String connectionString = eventHubs.getConnectionString();
 
-        // Create consumer client to assert that producer works as expected.
-        final EventHubConsumerClient consumer = new EventHubClientBuilder()
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
                 .connectionString(eventHubs.getConnectionString())
                 .fullyQualifiedNamespace("emulatorNs1")
                 .eventHubName("eh1")
                 .consumerGroup("cg1")
-                .buildConsumerClient();
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
+        final String connectionString = eventHubs.getConnectionString();
+
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
@@ -163,28 +167,17 @@ final class AMQPTest {
             client.addEvents(eventData, acceptTransactionFuture);
             expectedEvents.add(eventData);
         }
-        // Wait and .close() for the AMQP client to flush any remaining batches
+
+        // Waiting additional 10 seconds for async consumer client to receive the events for assertions...
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
-        client.close();
 
-        final String partitionId = "0";
-        final Instant twelveHoursAgo = Instant.now().minus(Duration.ofHours(12));
-        final EventPosition startingPosition = EventPosition.fromEnqueuedTime(twelveHoursAgo);
-        // Read events from partition '0' and returns the first 1001 received or until the 30 seconds has elapsed.
-        final IterableStream<PartitionEvent> events = consumer
-                .receiveFromPartition(partitionId, 1001, startingPosition, Duration.ofSeconds(10));
-
-        final Iterator<PartitionEvent> iterator = events.iterator();
-        Assertions.assertTrue(iterator.hasNext());
-        final List<EventData> resultEvents = new ArrayList<>();
-        while (iterator.hasNext()) {
-            PartitionEvent event = iterator.next();
-            resultEvents.add(event.getData());
-        }
         Assertions.assertEquals(1000, amqpMeter.getCount());
-        for (EventData eventData : resultEvents) {
-            Assertions.assertTrue(expectedEvents.contains(eventData));
+        // Assert that all the expected payloads are present in eventhub results
+        for (EventData expectedEvent : expectedEvents) {
+            Assertions
+                    .assertTrue(receivedPayloads.contains(expectedEvent.getBodyAsString()), "Message was not received by Eventhub: " + expectedEvent.getBodyAsString());
         }
+        client.close();
         consumer.close();
     }
 

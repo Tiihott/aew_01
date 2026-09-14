@@ -47,7 +47,6 @@ package com.teragrep.aew_01;
 
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerAsyncClient;
-import com.azure.messaging.eventhubs.EventHubConsumerClient;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.rlp_01.RelpBatch;
@@ -154,14 +153,6 @@ public class IntegrationDeferredTest {
 
         final String connectionString = eventHubs.getConnectionString();
 
-        // Create consumer client to assert that producer works as expected.
-        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
-                .connectionString(eventHubs.getConnectionString())
-                .fullyQualifiedNamespace("emulatorNs1")
-                .eventHubName("eh1")
-                .consumerGroup("cg1")
-                .buildConsumerClient();
-
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
@@ -214,7 +205,6 @@ public class IntegrationDeferredTest {
         Assertions.assertTrue(expectedPayloads.contains(receivedPayloads.get(0)));
         Assertions.assertTrue(expectedPayloads.contains(receivedPayloads.get(1)));
         Assertions.assertEquals(2, amqpMeter.getCount());
-        eventHubConsumerClient.close();
         /*
          * Stop the deferred processing thread
          */
@@ -278,14 +268,6 @@ public class IntegrationDeferredTest {
 
         final String connectionString = eventHubs.getConnectionString();
 
-        // Create consumer client to assert that producer works as expected.
-        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
-                .connectionString(eventHubs.getConnectionString())
-                .fullyQualifiedNamespace("emulatorNs1")
-                .eventHubName("eh1")
-                .consumerGroup("cg1")
-                .buildConsumerClient();
-
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
@@ -344,7 +326,6 @@ public class IntegrationDeferredTest {
         Assertions.assertAll(relpConnection::disconnect);
         relp.close();
         consumer.close();
-        eventHubConsumerClient.close();
         /*
          * Stop the deferred processing thread
          */
@@ -530,14 +511,6 @@ public class IntegrationDeferredTest {
 
         final String connectionString = eventHubs.getConnectionString();
 
-        // Create consumer client to assert that producer works as expected.
-        final EventHubConsumerClient eventHubConsumerClient = new EventHubClientBuilder()
-                .connectionString(eventHubs.getConnectionString())
-                .fullyQualifiedNamespace("emulatorNs1")
-                .eventHubName("eh1")
-                .consumerGroup("cg1")
-                .buildConsumerClient();
-
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
@@ -599,7 +572,6 @@ public class IntegrationDeferredTest {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
         }
-        eventHubConsumerClient.close();
         /*
          * Stop the deferred processing thread
          */
