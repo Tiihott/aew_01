@@ -184,10 +184,19 @@ public class IntegrationDeferredTest {
         sendThreads.add(sendBatch(port, relpBatch));
 
         // Wait for the AMQP to flush all events to eventhub
-        while (amqpMeter.getCount() < 2 || receivedPayloads.size() < 2) {
-            LOGGER.info("Waiting for events to be received AMQP... {}/2", amqpMeter.getCount());
-            LOGGER.info("Waiting for events to be received RELP... {}/2", relpMeter.getCount());
-            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
+        }
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 2) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/2", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        while (receivedPayloads.size() != 0 && receivedPayloads.size() < 2) {
+            LOGGER
+                    .info(
+                            "Waiting for async consumer client to receive the events for assertions... {}/2",
+                            receivedPayloads.size()
+                    );
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         LOGGER
@@ -195,15 +204,15 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
-        for (Thread thread : sendThreads) {
-            Assertions.assertDoesNotThrow(() -> thread.join());
-        }
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         }
 
+        LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
+        LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
+        LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
         Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
         Assertions.assertEquals(2, amqpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
@@ -307,10 +316,19 @@ public class IntegrationDeferredTest {
         sendThreads.add(sendBatch(port, relpBatch));
 
         // Wait for the AMQP to flush all events to eventhub
-        while (amqpMeter.getCount() < 1000 || receivedPayloads.size() < 1000) {
-            LOGGER.info("Waiting for events to be received AMQP... {}/1000", amqpMeter.getCount());
-            LOGGER.info("Waiting for events to be received RELP... {}/1000", relpMeter.getCount());
-            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
+        }
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 1000) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/1000", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        while (receivedPayloads.size() != 0 && receivedPayloads.size() < 1000) {
+            LOGGER
+                    .info(
+                            "Waiting for async consumer client to receive the events for assertions... {}/1000",
+                            receivedPayloads.size()
+                    );
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         LOGGER
@@ -318,15 +336,15 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
-        for (Thread thread : sendThreads) {
-            Assertions.assertDoesNotThrow(() -> thread.join());
-        }
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         }
 
+        LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
+        LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
+        LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
         Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
         Assertions.assertEquals(1000, amqpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
@@ -432,10 +450,19 @@ public class IntegrationDeferredTest {
             cursor += 1000;
         }
         // Wait for the AMQP to flush all events to eventhub
-        while (amqpMeter.getCount() < 10000 || receivedPayloads.size() < 10000) {
-            LOGGER.info("Waiting for events to be received AMQP... {}/10000", amqpMeter.getCount());
-            LOGGER.info("Waiting for events to be received RELP... {}/10000", relpMeter.getCount());
-            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
+        }
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/10000", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        while (receivedPayloads.size() != 0 && receivedPayloads.size() < 10000) {
+            LOGGER
+                    .info(
+                            "Waiting for async consumer client to receive the events for assertions... {}/10000",
+                            receivedPayloads.size()
+                    );
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         LOGGER
@@ -443,13 +470,13 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
-        for (Thread thread : sendThreads) {
-            Assertions.assertDoesNotThrow(() -> thread.join());
-        }
         amqpClient.close();
         relp.close();
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
+        LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
+        LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
@@ -555,10 +582,19 @@ public class IntegrationDeferredTest {
             Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
         }
         // Wait for the AMQP to flush all events to eventhub
-        while (amqpMeter.getCount() < 10000 || receivedPayloads.size() < 10000) {
-            LOGGER.info("Waiting for events to be received AMQP... {}/10000", amqpMeter.getCount());
-            LOGGER.info("Waiting for events to be received RELP... {}/10000", relpMeter.getCount());
-            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
+        }
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/10000", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        while (receivedPayloads.size() != 0 && receivedPayloads.size() < 10000) {
+            LOGGER
+                    .info(
+                            "Waiting for async consumer client to receive the events for assertions... {}/10000",
+                            receivedPayloads.size()
+                    );
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         LOGGER
@@ -566,14 +602,14 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
-        for (Thread thread : sendThreads) {
-            Assertions.assertDoesNotThrow(() -> thread.join());
-        }
         amqpClient.close();
         relp.close();
         consumer.close();
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
+        LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
+        LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
@@ -673,15 +709,21 @@ public class IntegrationDeferredTest {
         }
         List<Thread> sendThreads = new LinkedList<>();
         sendThreads.add(sendBatch(port, relpBatch));
+
+        // Wait for the AMQP to flush all events to eventhub
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-
-        // Wait for the AMQP to flush all events to eventhub
-        while (amqpMeter.getCount() < 10000 || receivedPayloads.size() < 10000) {
-            LOGGER.info("Waiting for events to be received AMQP... {}/10000", amqpMeter.getCount());
-            LOGGER.info("Waiting for events to be received RELP... {}/10000", relpMeter.getCount());
-            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/10000", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        while (receivedPayloads.size() != 0 && receivedPayloads.size() < 10000) {
+            LOGGER
+                    .info(
+                            "Waiting for async consumer client to receive the events for assertions... {}/10000",
+                            receivedPayloads.size()
+                    );
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         LOGGER
@@ -697,6 +739,9 @@ public class IntegrationDeferredTest {
         amqpClient.close();
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
+        LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
+        LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
@@ -797,14 +842,21 @@ public class IntegrationDeferredTest {
         }
         List<Thread> sendThreads = new LinkedList<>();
         sendThreads.add(sendBatch(port, relpBatch));
+
+        // Wait for the AMQP to flush all events to eventhub
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-        // Wait for the AMQP to flush all events to eventhub
-        while (amqpMeter.getCount() < 100000 || receivedPayloads.size() < 100000) {
-            LOGGER.info("Waiting for events to be received AMQP... {}/100000", amqpMeter.getCount());
-            LOGGER.info("Waiting for events to be received RELP... {}/100000", relpMeter.getCount());
-            LOGGER.info("Received events by EventHub: {}", receivedPayloads.size());
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/100000", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        while (receivedPayloads.size() != 0 && receivedPayloads.size() < 100000) {
+            LOGGER
+                    .info(
+                            "Waiting for async consumer client to receive the events for assertions... {}/100000",
+                            receivedPayloads.size()
+                    );
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         LOGGER
@@ -814,6 +866,9 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
+        LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
+        LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(100000 <= amqpMeter.getCount());
         Assertions.assertTrue(100000 <= relpMeter.getCount());
@@ -874,6 +929,15 @@ public class IntegrationDeferredTest {
                 }
                 else { // successful batch
                     notSent = false;
+                    try {
+                        relpConnection.disconnect();
+                    }
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    catch (TimeoutException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         };
