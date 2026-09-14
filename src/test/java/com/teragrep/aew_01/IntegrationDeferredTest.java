@@ -61,7 +61,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.azure.AzuriteContainer;
@@ -358,10 +357,6 @@ public class IntegrationDeferredTest {
         }
     }
 
-    @EnabledIfSystemProperty(
-            named = "runHeavyTests",
-            matches = "true"
-    )
     @Test
     void testDeferredRelpAndAmqpMultipleMediumBatches() {
 
@@ -484,10 +479,6 @@ public class IntegrationDeferredTest {
         relp.close();
     }
 
-    @EnabledIfSystemProperty(
-            named = "runHeavyTests",
-            matches = "true"
-    )
     @Test
     void testDeferredRelpAndAmqp100x100Batches() {
 
@@ -621,10 +612,6 @@ public class IntegrationDeferredTest {
         }
     }
 
-    @EnabledIfSystemProperty(
-            named = "runHeavyTests",
-            matches = "true"
-    )
     @Test
     void testDeferredRelpAndAmqpSingleLargeBatch() {
 
@@ -749,10 +736,6 @@ public class IntegrationDeferredTest {
         }
     }
 
-    @EnabledIfSystemProperty(
-            named = "runHeavyTests",
-            matches = "true"
-    )
     @Test
     void testDeferredRelpAndAmqpSingleVeryLargeBatch() {
 
