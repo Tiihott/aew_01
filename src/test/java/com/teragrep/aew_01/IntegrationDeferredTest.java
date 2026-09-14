@@ -169,18 +169,20 @@ public class IntegrationDeferredTest {
         deferredProcessingThread.start();
         // Wait for the server to start
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send 2 messages to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
+        // send 2 messages to the RELP server in a single batch.
         final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        int cursor = 1;
+        final List<String> expectedPayloads = new ArrayList<>();
+        List<Thread> sendThreads = new LinkedList<>();
         final RelpBatch relpBatch = new RelpBatch();
-        List<String> expectedPayloads = new ArrayList<>();
-        expectedPayloads.add("Hello World! 1");
-        expectedPayloads.add("Hello World! 2");
-        long reqId1 = relpBatch.insert("Hello World! 1".getBytes(StandardCharsets.UTF_8));
-        long reqId2 = relpBatch.insert("Hello World! 2".getBytes(StandardCharsets.UTF_8));
-        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        // Wait for the AMQP scheduler to flush any remaining batches and close.
+        final List<Long> reqIds = new ArrayList<>();
+        for (int i = cursor; i < cursor + 2; i++) {
+            String payload = "Hello World" + i;
+            reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+            expectedPayloads.add(payload);
+        }
+        sendThreads.add(sendBatch(port, relpBatch));
+
         // Wait for the AMQP to flush all events to eventhub
         while (amqpMeter.getCount() < 2 || receivedPayloads.size() < 2) {
             LOGGER.info("Waiting for events to be received AMQP... {}/2", amqpMeter.getCount());
@@ -193,18 +195,24 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
+        }
         amqpClient.close();
         // verify successful transaction
-        Assertions.assertTrue(relpBatch.verifyTransaction(reqId1));
-        Assertions.assertTrue(relpBatch.verifyTransaction(reqId2));
-        Assertions.assertAll(relpConnection::disconnect);
-        relp.close();
-        consumer.close();
+        for (Long reqId : reqIds) {
+            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+        }
 
         Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
-        Assertions.assertTrue(expectedPayloads.contains(receivedPayloads.get(0)));
-        Assertions.assertTrue(expectedPayloads.contains(receivedPayloads.get(1)));
         Assertions.assertEquals(2, amqpMeter.getCount());
+        // Assert that all the expected payloads are present in eventhub results
+        for (String expectedPayload : expectedPayloads) {
+            Assertions
+                    .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+        }
+        relp.close();
+        consumer.close();
         /*
          * Stop the deferred processing thread
          */
@@ -285,19 +293,19 @@ public class IntegrationDeferredTest {
         // Wait for the server to start
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
         // send batch of 1000 messages to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
         final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        int cursor = 1;
+        final List<String> expectedPayloads = new ArrayList<>();
+        List<Thread> sendThreads = new LinkedList<>();
         final RelpBatch relpBatch = new RelpBatch();
-        List<Long> reqIds = new ArrayList<>();
-        List<String> expectedPayloads = new ArrayList<>();
-        for (int i = 1; i <= 1000; i++) {
-            String payload = "Hello World " + i;
+        final List<Long> reqIds = new ArrayList<>();
+        for (int i = cursor; i < cursor + 1000; i++) {
+            String payload = "Hello World" + i;
             reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
             expectedPayloads.add(payload);
         }
+        sendThreads.add(sendBatch(port, relpBatch));
 
-        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
         // Wait for the AMQP to flush all events to eventhub
         while (amqpMeter.getCount() < 1000 || receivedPayloads.size() < 1000) {
             LOGGER.info("Waiting for events to be received AMQP... {}/1000", amqpMeter.getCount());
@@ -310,6 +318,9 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
+        }
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
@@ -323,7 +334,6 @@ public class IntegrationDeferredTest {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
         }
-        Assertions.assertAll(relpConnection::disconnect);
         relp.close();
         consumer.close();
         /*
