@@ -579,7 +579,6 @@ public class IntegrationDeferredTest {
             }
             sendThreads.add(sendBatch(port, relpBatch));
             cursor += 100;
-            Assertions.assertDoesNotThrow(() -> Thread.sleep(100));
         }
         // Wait for the AMQP to flush all events to eventhub
         for (Thread thread : sendThreads) {
@@ -613,6 +612,138 @@ public class IntegrationDeferredTest {
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
+        // Assert that all the expected payloads are present in eventhub results
+        for (String expectedPayload : expectedPayloads) {
+            Assertions
+                    .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+        }
+        /*
+         * Stop the deferred processing thread
+         */
+        deferredSyslog.run.set(false);
+        try {
+            deferredProcessingThread.join();
+        }
+        catch (InterruptedException interruptedException) {
+            throw new RuntimeException(interruptedException);
+        }
+    }
+
+    @Test
+    void testDeferredRelpAndAmqp100x1000Batches() {
+
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
+        /*
+         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
+         */
+
+        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        /*
+         * Add default commands, open and close, they are mandatory
+         */
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+
+        /*
+         * Queue for deferring the processing of the frames
+         */
+        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(10024);
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                frameContexts.add(frameContext);
+            }
+
+            @Override
+            public void close() {
+                frameContexts.clear();
+            }
+        };
+
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
+        final String connectionString = eventHubs.getConnectionString();
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        Meter relpMeter = metricRegistry.meter("relpMeter");
+        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        /*
+         * Start deferred processing, otherwise our client will wait forever for a response
+         */
+        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
+        Thread deferredProcessingThread = new Thread(deferredSyslog);
+        deferredProcessingThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send 100 batches of 100 messages to the RELP server.
+        final int port = 1601;
+        int cursor = 1;
+        final List<String> expectedPayloads = new ArrayList<>();
+        List<Thread> sendThreads = new LinkedList<>();
+        for (int j = 1; j <= 100; j++) {
+            final RelpBatch relpBatch = new RelpBatch();
+            final List<Long> reqIds = new ArrayList<>();
+            for (int i = cursor; i < cursor + 1000; i++) {
+                String payload = "Hello World" + i;
+                reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+                expectedPayloads.add(payload);
+            }
+            sendThreads.add(sendBatch(port, relpBatch));
+            cursor += 1000;
+        }
+        // Wait for the AMQP to flush all events to eventhub
+        for (Thread thread : sendThreads) {
+            Assertions.assertDoesNotThrow(() -> thread.join());
+        }
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/100000", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        while (receivedPayloads.size() != 0 && receivedPayloads.size() < 100000) {
+            LOGGER
+                    .info(
+                            "Waiting for async consumer client to receive the events for assertions... {}/100000",
+                            receivedPayloads.size()
+                    );
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+        LOGGER
+                .info(
+                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                );
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        amqpClient.close();
+        relp.close();
+        consumer.close();
+
+        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
+        LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
+        LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
+        Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
+        Assertions.assertTrue(100000 <= amqpMeter.getCount());
+        Assertions.assertTrue(100000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
         for (String expectedPayload : expectedPayloads) {
             Assertions
