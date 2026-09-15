@@ -662,7 +662,7 @@ public class IntegrationDeferredTest {
         /*
          * Queue for deferring the processing of the frames
          */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(10024);
+        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(100024);
         RelpEvent syslogRelpEvent = new RelpEvent() {
 
             @Override
