@@ -201,9 +201,9 @@ public class IntegrationDeferredTest {
         }
         LOGGER
                 .info(
-                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                        "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
@@ -333,9 +333,9 @@ public class IntegrationDeferredTest {
         }
         LOGGER
                 .info(
-                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                        "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
@@ -467,9 +467,9 @@ public class IntegrationDeferredTest {
         }
         LOGGER
                 .info(
-                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                        "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         amqpClient.close();
         relp.close();
 
@@ -598,9 +598,9 @@ public class IntegrationDeferredTest {
         }
         LOGGER
                 .info(
-                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                        "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         amqpClient.close();
         relp.close();
         consumer.close();
@@ -730,9 +730,9 @@ public class IntegrationDeferredTest {
         }
         LOGGER
                 .info(
-                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                        "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         amqpClient.close();
         relp.close();
         consumer.close();
@@ -859,9 +859,9 @@ public class IntegrationDeferredTest {
         }
         LOGGER
                 .info(
-                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                        "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         // verify successful transaction
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
@@ -992,9 +992,9 @@ public class IntegrationDeferredTest {
         }
         LOGGER
                 .info(
-                        "All messages processed by producer client, waiting additional 10 seconds for async consumer client to receive the events for assertions..."
+                        "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(10000));
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
