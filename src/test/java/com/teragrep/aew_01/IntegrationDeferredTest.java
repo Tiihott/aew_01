@@ -344,11 +344,13 @@ public class IntegrationDeferredTest {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         }
 
+        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
         LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
         LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
-        Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
-        Assertions.assertEquals(1000, amqpMeter.getCount());
+        Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
+        Assertions.assertTrue(1000 <= amqpMeter.getCount());
+        Assertions.assertTrue(1000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
         for (String expectedPayload : expectedPayloads) {
             Assertions
