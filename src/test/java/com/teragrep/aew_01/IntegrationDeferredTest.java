@@ -204,6 +204,8 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
+        consumer.close();
+        relp.close();
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
@@ -220,8 +222,6 @@ public class IntegrationDeferredTest {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
         }
-        relp.close();
-        consumer.close();
         /*
          * Stop the deferred processing thread
          */
@@ -336,6 +336,8 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
+        consumer.close();
+        relp.close();
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
@@ -352,8 +354,6 @@ public class IntegrationDeferredTest {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
         }
-        relp.close();
-        consumer.close();
         /*
          * Stop the deferred processing thread
          */
@@ -470,8 +470,9 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
-        amqpClient.close();
+        consumer.close();
         relp.close();
+        amqpClient.close();
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
@@ -485,16 +486,12 @@ public class IntegrationDeferredTest {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
         }
-        consumer.close();
         /*
          * Stop the deferred processing thread
          */
         deferredSyslog.run.set(false);
 
         Assertions.assertDoesNotThrow(() -> deferredProcessingThread.join());
-
-        amqpClient.close();
-        relp.close();
     }
 
     @Test
@@ -601,9 +598,9 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
-        amqpClient.close();
-        relp.close();
         consumer.close();
+        relp.close();
+        amqpClient.close();
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
@@ -733,9 +730,9 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
-        amqpClient.close();
-        relp.close();
         consumer.close();
+        relp.close();
+        amqpClient.close();
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
@@ -862,12 +859,13 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
+        consumer.close();
+        relp.close();
+        amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         }
-        relp.close();
-        amqpClient.close();
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
@@ -881,7 +879,6 @@ public class IntegrationDeferredTest {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
         }
-        consumer.close();
         /*
          * Stop the deferred processing thread
          */
@@ -995,6 +992,9 @@ public class IntegrationDeferredTest {
                         "All messages processed by producer client, waiting additional 30 seconds for async consumer client to receive the events for assertions..."
                 );
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
+        consumer.close();
+        relp.close();
+        amqpClient.close();
 
         // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
@@ -1023,9 +1023,6 @@ public class IntegrationDeferredTest {
         catch (InterruptedException interruptedException) {
             throw new RuntimeException(interruptedException);
         }
-        consumer.close();
-        relp.close();
-        amqpClient.close();
     }
 
     private Thread sendBatch(int port, RelpBatch relpBatch) {
