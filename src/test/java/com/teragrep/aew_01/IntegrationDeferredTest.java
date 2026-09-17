@@ -985,9 +985,9 @@ public class IntegrationDeferredTest {
     private Thread sendBatch(int port, RelpBatch relpBatch) {
         Runnable runnable = () -> {
             final RelpConnection relpConnection = new RelpConnection();
-            relpConnection.setWriteTimeout(10000);
-            relpConnection.setConnectionTimeout(10000);
-            relpConnection.setReadTimeout(10000);
+            relpConnection.setWriteTimeout(1000);
+            relpConnection.setConnectionTimeout(1000);
+            relpConnection.setReadTimeout(1000);
             try {
                 relpConnection.connect("localhost", port);
             }
