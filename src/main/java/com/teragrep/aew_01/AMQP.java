@@ -52,7 +52,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -96,8 +95,8 @@ public final class AMQP {
                 .buildAsyncProducerClient();
     }
 
-    public CompletableFuture<Void> addEvents(final EventData eventData, final CompletableFuture<Boolean> futureAck) {
-        final CompletableFuture<Void> future = producerClient.createBatch().flatMap(batch -> {
+    public CompletableFuture<Void> addEvents(final EventData eventData) {
+        return producerClient.createBatch().flatMap(batch -> {
             if (!batch.tryAdd(eventData)) {
                 throw new RuntimeException("Something went wrong with adding events to batch.");
             }
@@ -107,27 +106,10 @@ public final class AMQP {
                 LOGGER.error("Error occurred publishing event: {}", throwable.getMessage());
             }
             else {
-                try {
-                    final boolean success = futureAck.get();
-                    if (success) {
-                        amqpMeter.mark();
-                        LOGGER.debug("Successfully published event");
-                    }
-                    else {
-                        LOGGER.error("Error occurred publishing event");
-                    }
-                }
-                catch (InterruptedException e) {
-                    LOGGER.error("Error occurred publishing event: ", e);
-                    throw new RuntimeException(e);
-                }
-                catch (ExecutionException e) {
-                    LOGGER.error("Error occurred publishing event: ", e);
-                    throw new RuntimeException(e);
-                }
+                amqpMeter.mark();
+                LOGGER.debug("Successfully published event");
             }
         }, virtualThreadExecutor);
-        return future;
     }
 
     public void close() {

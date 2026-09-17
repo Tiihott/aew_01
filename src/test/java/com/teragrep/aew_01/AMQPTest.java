@@ -122,7 +122,7 @@ final class AMQPTest {
             CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
                 return true;
             });
-            client.addEvents(eventData, acceptTransactionFuture);
+            client.addEvents(eventData);
         }
         // Wait and .close() for the AMQP client to flush any remaining batches
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
@@ -164,7 +164,7 @@ final class AMQPTest {
                 return true;
             });
             final EventData eventData = new EventData("Test message " + i);
-            client.addEvents(eventData, acceptTransactionFuture);
+            client.addEvents(eventData);
             expectedEvents.add(eventData);
         }
 

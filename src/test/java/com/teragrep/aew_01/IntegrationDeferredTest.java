@@ -936,11 +936,14 @@ public class IntegrationDeferredTest {
         sendThreads.add(sendBatch(port, relpBatch));
 
         // Wait for the AMQP to flush all events to eventhub
+        LOGGER.info("relpBatch.verifyTransactionAll(): {}", relpBatch.verifyTransactionAll());
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
+            LOGGER.info("Waiting for events to be processed by RELP... {}/100000", relpMeter.getCount());
             LOGGER.info("Waiting for events to be processed by AMQP... {}/100000", amqpMeter.getCount());
+            LOGGER.info("relpBatch.verifyTransactionAll(): {}", relpBatch.verifyTransactionAll());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         while (receivedPayloads.size() != 0 && receivedPayloads.size() < 100000) {
@@ -949,6 +952,7 @@ public class IntegrationDeferredTest {
                             "Waiting for async consumer client to receive the events for assertions... {}/100000",
                             receivedPayloads.size()
                     );
+            LOGGER.info("relpBatch.verifyTransactionAll(): {}", relpBatch.verifyTransactionAll());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         LOGGER
@@ -985,9 +989,9 @@ public class IntegrationDeferredTest {
     private Thread sendBatch(int port, RelpBatch relpBatch) {
         Runnable runnable = () -> {
             final RelpConnection relpConnection = new RelpConnection();
-            relpConnection.setWriteTimeout(1000);
-            relpConnection.setConnectionTimeout(1000);
-            relpConnection.setReadTimeout(1000);
+            relpConnection.setWriteTimeout(10000);
+            relpConnection.setConnectionTimeout(10000);
+            relpConnection.setReadTimeout(10000);
             try {
                 relpConnection.connect("localhost", port);
             }

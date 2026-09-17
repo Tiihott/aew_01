@@ -65,6 +65,7 @@ public class DeferredSyslog implements Runnable {
     private final AMQP amqpClient;
     private final Meter relpMeter;
 
+    private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     public final AtomicBoolean run;
 
     DeferredSyslog(BlockingQueue<FrameContext> frameContexts, AMQP amqpClient, Meter relpMeter) {
@@ -90,28 +91,30 @@ public class DeferredSyslog implements Runnable {
                 // try-with-resources so frame is closed and freed,
                 RelpFrame relpFrame = frameContext.relpFrame();
                 EventData eventData = new EventData(relpFrame.payload().toString());
-                CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
-                    RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
-                    RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
-                    Writeable writeable = responseFrame.toWriteable();
-                    try {
-                        frameContext.establishedContext().egress().accept(writeable);
-                    }
-                    catch (Exception e) {
-                        LOGGER.error("Exception while writing response", e);
-                    }
-                    relpFrame.close();
-                    relpMeter.mark();
-                    return true;
-                }).exceptionally(ex -> {
-                    // Exception handling logic
-                    LOGGER.error("Error occurred publishing event: {}", ex.getMessage());
-                    relpFrame.close();
-                    return false;
-                });
-                // Start publishing process
-                amqpClient.addEvents(eventData, acceptTransactionFuture);
-
+                // FIXME: The CompletableFuture is executed right after creation instead of when calling .get()!
+                CompletableFuture<Void> acceptTransactionFuture = CompletableFuture
+                        .supplyAsync(
+                                () -> {
+                                    // Start publishing process
+                                    return amqpClient.addEvents(eventData);
+                                }
+                        )
+                        .thenAccept(result -> {
+                            result.whenCompleteAsync((s, e) -> {
+                                RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
+                                RelpFrame responseFrame = relpFrameFactory
+                                        .create(relpFrame.txn().toBytes(), "rsp", "200 OK");
+                                Writeable writeable = responseFrame.toWriteable();
+                                try {
+                                    frameContext.establishedContext().egress().accept(writeable);
+                                }
+                                catch (Exception ex) {
+                                    LOGGER.error("Exception while writing response", ex);
+                                }
+                                relpFrame.close();
+                                relpMeter.mark();
+                            }, virtualThreadExecutor);
+                        });
             }
             catch (Exception interruptedException) {
                 LOGGER.error("Interrupted while waiting for events to complete", interruptedException);
