@@ -91,7 +91,6 @@ public class DeferredSyslog implements Runnable {
                 // try-with-resources so frame is closed and freed,
                 RelpFrame relpFrame = frameContext.relpFrame();
                 EventData eventData = new EventData(relpFrame.payload().toString());
-                // FIXME: The CompletableFuture is executed right after creation instead of when calling .get()!
                 CompletableFuture<Void> acceptTransactionFuture = CompletableFuture
                         .supplyAsync(
                                 () -> {
