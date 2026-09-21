@@ -94,7 +94,7 @@ final class AMQPTest {
     }
 
     @Test
-    void testAddEvents() {
+    void testAddEvent() {
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -116,8 +116,7 @@ final class AMQPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
-        final List<EventData> allEvents = Arrays
-                .asList(new EventData("Test message one"), new EventData("Test message two"));
+        final List<EventData> allEvents = Arrays.asList(new EventData("Test message one"));
         for (EventData eventData : allEvents) {
             CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
                 return true;
@@ -126,16 +125,15 @@ final class AMQPTest {
         }
         // Wait and .close() for the AMQP client to flush any remaining batches
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
-        Assertions.assertEquals(2, receivedPayloads.size());
+        Assertions.assertEquals(1, receivedPayloads.size());
         Assertions.assertTrue(receivedPayloads.contains("Test message one"));
-        Assertions.assertTrue(receivedPayloads.contains("Test message two"));
-        Assertions.assertEquals(2, amqpMeter.getCount());
+        Assertions.assertEquals(1, amqpMeter.getCount());
         client.close();
         consumer.close();
     }
 
     @Test
-    void testAddEventsMultiple() {
+    void testAddEvents1000() {
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -168,10 +166,72 @@ final class AMQPTest {
             expectedEvents.add(eventData);
         }
 
-        // Waiting additional 10 seconds for async consumer client to receive the events for assertions...
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 1000) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/1000", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+
+        // Waiting additional 30 seconds for async consumer client to receive the events for assertions...
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
 
         Assertions.assertEquals(1000, amqpMeter.getCount());
+        Assertions.assertEquals(1000, expectedEvents.size());
+        Assertions.assertEquals(1000, receivedPayloads.size());
+        // Assert that all the expected payloads are present in eventhub results
+        for (EventData expectedEvent : expectedEvents) {
+            Assertions
+                    .assertTrue(receivedPayloads.contains(expectedEvent.getBodyAsString()), "Message was not received by Eventhub: " + expectedEvent.getBodyAsString());
+        }
+        client.close();
+        consumer.close();
+    }
+
+    @Test
+    void testAddEvents100000() {
+
+        // Create async consumer that listens for all incoming messages to EventHub.
+        final List<String> receivedPayloads = new ArrayList<>();
+        EventHubConsumerAsyncClient consumer = new EventHubClientBuilder()
+                .connectionString(eventHubs.getConnectionString())
+                .fullyQualifiedNamespace("emulatorNs1")
+                .eventHubName("eh1")
+                .consumerGroup("cg1")
+                .buildAsyncConsumerClient();
+        consumer.receive(true).subscribe(event -> {
+            receivedPayloads.add(event.getData().getBodyAsString());
+        }, error -> {
+            Assertions.fail("Error receiving events", error);
+        }, () -> {
+            LOGGER.info("Stream has ended");
+        });
+
+        final String connectionString = eventHubs.getConnectionString();
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
+        final List<EventData> expectedEvents = new ArrayList<>();
+        for (int i = 1; i <= 100000; i++) {
+            CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
+                return true;
+            });
+            final EventData eventData = new EventData("Test message " + i);
+            client.addEvents(eventData);
+            expectedEvents.add(eventData);
+        }
+
+        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
+            LOGGER.info("Waiting for events to be processed by AMQP... {}/100000", amqpMeter.getCount());
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
+        }
+
+        // Waiting additional 30 seconds for async consumer client to receive the events for assertions...
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(30 * 1000));
+
+        Assertions.assertEquals(100000, amqpMeter.getCount());
+        Assertions.assertEquals(100000, expectedEvents.size());
+        // Throttling of EventHub Emulator seems to produce some duplicate events.
+        Assertions.assertTrue(receivedPayloads.size() >= 100000);
         // Assert that all the expected payloads are present in eventhub results
         for (EventData expectedEvent : expectedEvents) {
             Assertions
