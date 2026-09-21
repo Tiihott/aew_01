@@ -57,6 +57,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 class RELPTest {
 
@@ -152,6 +153,34 @@ class RELPTest {
         }
         Assertions.assertAll(relpConnection::disconnect);
         Assertions.assertEquals(100000, relpMeter.getCount());
+        relp.close();
+    }
+
+    @Test
+    void testTimeoutException() {
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter relpMeter = metricRegistry.meter("relpMeter");
+
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
+            // Sleep for 2 seconds to trigger RELP client timeout exception, emulating EventHub throttling.
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(2000));
+            LOGGER.info(frameContext.relpFrame().payload().toString());
+            relpMeter.mark();
+        });
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // send message to the RELP server.
+        final RelpConnection relpConnection = new RelpConnection();
+        relpConnection.setConnectionTimeout(1000);
+        relpConnection.setWriteTimeout(1000);
+        relpConnection.setReadTimeout(1000);
+        final int port = 1601;
+        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+        final RelpBatch relpBatch = new RelpBatch();
+        long reqId = relpBatch.insert("Hello World!".getBytes(StandardCharsets.UTF_8));
+        Assertions.assertThrows(TimeoutException.class, () -> relpConnection.commit(relpBatch));
         relp.close();
     }
 }
