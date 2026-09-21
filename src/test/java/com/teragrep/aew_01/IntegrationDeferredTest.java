@@ -1004,10 +1004,16 @@ public class IntegrationDeferredTest {
                     relpConnection.commit(relpBatch); // send batch
                 }
                 catch (IOException | TimeoutException e) {
+                    LOGGER.error("Error while committing transaction: ", e);
                     e.printStackTrace();
                 }
                 if (!relpBatch.verifyTransactionAll()) { // failed batch
                     relpBatch.retryAllFailed(); // re-queue failed events
+                    LOGGER
+                            .error(
+                                    "Failed to verify RELP batch transaction, retrying sending the {} failed messages",
+                                    relpBatch.getWorkQueueLength()
+                            );
                     relpConnection.tearDown(); // teardown connection
                     try {
                         relpConnection.connect("localhost", port); // reconnect
