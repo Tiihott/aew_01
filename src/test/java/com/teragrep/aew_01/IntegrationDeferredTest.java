@@ -340,10 +340,11 @@ public class IntegrationDeferredTest {
         for (Long reqId : reqIds) {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         }
-        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
         LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
         LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
+        // EventHub Emulator throttling will cause additional duplicate messages to appear in EventHub even without RELP read timeouts.
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(1000 <= amqpMeter.getCount());
         Assertions.assertTrue(1000 <= relpMeter.getCount());
@@ -465,10 +466,11 @@ public class IntegrationDeferredTest {
         deferredSyslog.run.set(false);
         Assertions.assertDoesNotThrow(() -> deferredProcessingThread.join());
 
-        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
         LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
         LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
+        // EventHub Emulator throttling will cause additional duplicate messages to appear in EventHub even without RELP read timeouts.
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
@@ -590,10 +592,11 @@ public class IntegrationDeferredTest {
         deferredSyslog.run.set(false);
         Assertions.assertDoesNotThrow(() -> deferredProcessingThread.join());
 
-        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
         LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
         LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
+        // EventHub Emulator throttling will cause additional duplicate messages to appear in EventHub even without RELP read timeouts.
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
@@ -715,10 +718,11 @@ public class IntegrationDeferredTest {
         deferredSyslog.run.set(false);
         Assertions.assertDoesNotThrow(() -> deferredProcessingThread.join());
 
-        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
         LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
         LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
+        // EventHub Emulator throttling will cause additional duplicate messages to appear in EventHub even without RELP read timeouts..
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(100000 <= amqpMeter.getCount());
         Assertions.assertTrue(100000 <= relpMeter.getCount());
@@ -841,10 +845,11 @@ public class IntegrationDeferredTest {
             Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
         }
 
-        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
         LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
         LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
+        // EventHub Emulator throttling will cause additional duplicate messages to appear in EventHub even without RELP read timeouts..
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
@@ -967,10 +972,11 @@ public class IntegrationDeferredTest {
         deferredSyslog.run.set(false);
         Assertions.assertDoesNotThrow(() -> deferredProcessingThread.join());
 
-        // TODO: Issues with EventHub (i.e. throttling) can cause duplicate events to end up in EventHub.
+        // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
         LOGGER.info("amqpMeter.getCount(): {}", amqpMeter.getCount());
         LOGGER.info("relpMeter.getCount(): {}", relpMeter.getCount());
         LOGGER.info("receivedPayloads.size(): {}", receivedPayloads.size());
+        // EventHub Emulator throttling will cause additional duplicate messages to appear in EventHub even without RELP read timeouts..
         Assertions.assertTrue(expectedPayloads.size() <= receivedPayloads.size());
         Assertions.assertTrue(100000 <= amqpMeter.getCount());
         Assertions.assertTrue(100000 <= relpMeter.getCount());

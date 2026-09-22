@@ -84,7 +84,6 @@ public final class RELP implements Runnable, AutoCloseable {
     private final EventLoop eventLoop;
     private final Thread eventLoopThread;
 
-    // The syslogConsumer will be responsible for passing on the relp payloads to the AMQP. Currently, logger is used.
     private final Supplier<FrameDelegate> frameDelegateSupplier;
     private final EventLoopFactory eventLoopFactory = new EventLoopFactory();
 

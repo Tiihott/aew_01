@@ -230,7 +230,7 @@ final class AMQPTest {
 
         Assertions.assertEquals(100000, amqpMeter.getCount());
         Assertions.assertEquals(100000, expectedEvents.size());
-        // Throttling of EventHub Emulator seems to produce some duplicate events.
+        // Throttling of EventHub Emulator produces duplicate messages in EventHub.
         Assertions.assertTrue(receivedPayloads.size() >= 100000);
         // Assert that all the expected payloads are present in eventhub results
         for (EventData expectedEvent : expectedEvents) {
