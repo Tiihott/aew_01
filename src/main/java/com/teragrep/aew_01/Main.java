@@ -152,7 +152,7 @@ public class Main {
         deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         try (
-                RELP relp = new RELP(new RelpConfig(configSource).tls(), new RelpConfig(configSource).port(), new RelpConfig(configSource).tlsTruststorePassword(), new RelpConfig(configSource).tlsKeystorePassword(), relpCommandConsumerMap);
+                RELP relp = new RELP(new RelpConfig(configSource).tls(), new RelpConfig(configSource).port(), new RelpConfig(configSource).tlsTruststorePassword(), new RelpConfig(configSource).tlsKeystorePassword(), new RelpConfig(configSource).processingThreads(), relpCommandConsumerMap);
         ) {
             relp.run();
         }

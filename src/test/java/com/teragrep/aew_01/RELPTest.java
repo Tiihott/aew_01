@@ -68,7 +68,7 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
             LOGGER.info(frameContext.relpFrame().payload().toString());
             relpMeter.mark();
         });
@@ -95,7 +95,7 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
             LOGGER.info(frameContext.relpFrame().payload().toString());
             relpMeter.mark();
         });
@@ -128,7 +128,7 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
             LOGGER.info(frameContext.relpFrame().payload().toString());
             relpMeter.mark();
         });
@@ -161,7 +161,7 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", frameContext -> {
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
             // Sleep for 2 seconds to trigger RELP client timeout exception, emulating EventHub throttling.
             Assertions.assertDoesNotThrow(() -> Thread.sleep(2000));
             LOGGER.info(frameContext.relpFrame().payload().toString());

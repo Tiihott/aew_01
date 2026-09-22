@@ -80,7 +80,7 @@ public final class RELP implements Runnable, AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RELP.class);
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(8);
+    private final ExecutorService executorService;
     private final EventLoop eventLoop;
     private final Thread eventLoopThread;
 
@@ -97,8 +97,10 @@ public final class RELP implements Runnable, AutoCloseable {
             final String port,
             final String tlsKeystore,
             final String tlsKeystorePassword,
+            final int processingThreads,
             Consumer<FrameContext> syslogConsumer
     ) {
+        this.executorService = Executors.newFixedThreadPool(processingThreads);
         this.tls = tls;
         this.port = port;
         this.tlsKeystore = tlsKeystore;
@@ -121,8 +123,10 @@ public final class RELP implements Runnable, AutoCloseable {
             final String port,
             final String tlsKeystore,
             final String tlsKeystorePassword,
+            final int processingThreads,
             Map<String, RelpEvent> relpCommandConsumerMap
     ) {
+        this.executorService = Executors.newFixedThreadPool(processingThreads);
         this.tls = tls;
         this.port = port;
         this.tlsKeystore = tlsKeystore;

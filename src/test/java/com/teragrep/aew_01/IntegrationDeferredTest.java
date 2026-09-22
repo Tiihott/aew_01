@@ -158,7 +158,7 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         /*
@@ -283,7 +283,7 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         /*
@@ -411,7 +411,7 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         /*
@@ -537,7 +537,7 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         /*
@@ -663,7 +663,7 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         /*
@@ -789,7 +789,7 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         /*
@@ -916,7 +916,7 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         /*
