@@ -56,11 +56,8 @@ import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
 import com.teragrep.aew_01.config.source.EnvironmentSource;
 import com.teragrep.aew_01.config.source.Sourceable;
-import com.teragrep.rlp_01.RelpCommand;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
-import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
-import com.teragrep.rlp_03.frame.delegate.event.RelpEventOpen;
 import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet;
 import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
@@ -70,9 +67,7 @@ import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -82,32 +77,10 @@ public class Main {
 
     // Start the server
     public static void main(String[] args) {
-        /*
-         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
-         */
-        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        /*
-         * Add default commands, open and close, they are mandatory
-         */
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
-        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-        /*
-         * Queue for deferring the processing of the frames
-         */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(1024);
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
-        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(1024); // TODO: Make capacity configurable
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         final MetricRegistry metricRegistry = new MetricRegistry();
         final Sourceable configSource = getConfigSource();

@@ -50,12 +50,9 @@ import com.azure.messaging.eventhubs.EventHubConsumerAsyncClient;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.RelpCommand;
 import com.teragrep.rlp_01.RelpConnection;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
-import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
-import com.teragrep.rlp_03.frame.delegate.event.RelpEventOpen;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +67,6 @@ import org.testcontainers.utility.MountableFile;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeoutException;
 
@@ -104,6 +100,10 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqp() {
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(1024);
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -124,32 +124,6 @@ public class IntegrationDeferredTest {
         /*
          * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
          */
-
-        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        /*
-         * Add default commands, open and close, they are mandatory
-         */
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
-        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-
-        /*
-         * Queue for deferring the processing of the frames
-         */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(1024);
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
-
-        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         final String connectionString = eventHubs.getConnectionString();
 
@@ -229,6 +203,10 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpSingleMediumBatch() {
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(1024);
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -245,36 +223,6 @@ public class IntegrationDeferredTest {
         }, () -> {
             LOGGER.info("Stream has ended");
         });
-
-        /*
-         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
-         */
-
-        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        /*
-         * Add default commands, open and close, they are mandatory
-         */
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
-        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-
-        /*
-         * Queue for deferring the processing of the frames
-         */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(1024);
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
-
-        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         final String connectionString = eventHubs.getConnectionString();
 
@@ -357,6 +305,10 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpMultipleMediumBatches() {
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024);
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -373,36 +325,6 @@ public class IntegrationDeferredTest {
         }, () -> {
             LOGGER.info("Stream has ended");
         });
-
-        /*
-         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
-         */
-
-        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        /*
-         * Add default commands, open and close, they are mandatory
-         */
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
-        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-
-        /*
-         * Queue for deferring the processing of the frames
-         */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(10024);
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
-
-        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         final String connectionString = eventHubs.getConnectionString();
 
@@ -483,6 +405,10 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqp100x100Batches() {
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024);
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -499,36 +425,6 @@ public class IntegrationDeferredTest {
         }, () -> {
             LOGGER.info("Stream has ended");
         });
-
-        /*
-         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
-         */
-
-        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        /*
-         * Add default commands, open and close, they are mandatory
-         */
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
-        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-
-        /*
-         * Queue for deferring the processing of the frames
-         */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(10024);
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
-
-        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         final String connectionString = eventHubs.getConnectionString();
 
@@ -609,6 +505,10 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqp100x1000Batches() {
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(100024);
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -625,36 +525,6 @@ public class IntegrationDeferredTest {
         }, () -> {
             LOGGER.info("Stream has ended");
         });
-
-        /*
-         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
-         */
-
-        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        /*
-         * Add default commands, open and close, they are mandatory
-         */
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
-        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-
-        /*
-         * Queue for deferring the processing of the frames
-         */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(100024);
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
-
-        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         final String connectionString = eventHubs.getConnectionString();
 
@@ -735,6 +605,10 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpSingleLargeBatch() {
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024);
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -751,36 +625,6 @@ public class IntegrationDeferredTest {
         }, () -> {
             LOGGER.info("Stream has ended");
         });
-
-        /*
-         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
-         */
-
-        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        /*
-         * Add default commands, open and close, they are mandatory
-         */
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
-        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-
-        /*
-         * Queue for deferring the processing of the frames
-         */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(10024);
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
-
-        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         final String connectionString = eventHubs.getConnectionString();
 
@@ -862,6 +706,10 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpSingleVeryLargeBatch() {
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(100024);
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -878,36 +726,6 @@ public class IntegrationDeferredTest {
         }, () -> {
             LOGGER.info("Stream has ended");
         });
-
-        /*
-         * DefaultFrameDelegate accepts Map<String, RelpEvent> for processing of the commands
-         */
-
-        Map<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        /*
-         * Add default commands, open and close, they are mandatory
-         */
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
-        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-
-        /*
-         * Queue for deferring the processing of the frames
-         */
-        BlockingQueue<FrameContext> frameContexts = new ArrayBlockingQueue<>(100024);
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
-
-        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         final String connectionString = eventHubs.getConnectionString();
 
