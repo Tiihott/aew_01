@@ -54,6 +54,7 @@ public final class RelpConfig {
     private final String tlsKeystorePassword;
     private final String tlsTruststorePassword;
     private final int processingThreads;
+    private final int frameContextsCapacity;
 
     public RelpConfig(final Sourceable configSource) {
         this(
@@ -61,7 +62,8 @@ public final class RelpConfig {
                 configSource.source("relp.tls", "<RELP TLS>"),
                 configSource.source("relp.tlsKeystorePassword", "<RELP TLS KEYSTORE PASSWORD>"),
                 configSource.source("relp.tlsTruststorePassword", "<RELP TLS TRUSTSTORE PASSWORD>"),
-                configSource.source("relp.processingThreads", "<1>")
+                configSource.source("relp.processingThreads", "1"),
+                configSource.source("relp.frameContextsCapacity", "1024")
         );
     }
 
@@ -70,13 +72,15 @@ public final class RelpConfig {
             String tls,
             String tlsKeystorePassword,
             String tlsTruststorePassword,
-            String processingThreads
+            String processingThreads,
+            String frameContextsCapacity
     ) {
         this.port = port;
         this.tls = tls;
         this.tlsKeystorePassword = tlsKeystorePassword;
         this.tlsTruststorePassword = tlsTruststorePassword;
         this.processingThreads = Integer.parseInt(processingThreads);
+        this.frameContextsCapacity = Integer.parseInt(frameContextsCapacity);
     }
 
     public String port() {
@@ -97,6 +101,10 @@ public final class RelpConfig {
 
     public int processingThreads() {
         return processingThreads;
+    }
+
+    public int frameContextsCapacity() {
+        return frameContextsCapacity;
     }
 
 }

@@ -45,6 +45,8 @@
  */
 package com.teragrep.aew_01.config;
 
+import com.teragrep.aew_01.config.source.EnvironmentSource;
+import com.teragrep.aew_01.config.source.Sourceable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -92,5 +94,20 @@ class AmqpConfigTest {
                 "clientIdExample"
         );
         Assertions.assertEquals("clientIdExample", amqpConfig.userManagedIdentityClientId());
+    }
+
+    @Test
+    void defaults() {
+        final String type = System.getProperty("config.source", "environment");
+        final Sourceable configSource;
+        if (!"environment".equals(type)) {
+            Assertions.fail("config.source not within supported types: [environment]");
+        }
+        configSource = new EnvironmentSource();
+        AmqpConfig amqpConfig = new AmqpConfig(configSource);
+        Assertions.assertEquals("<EVENT HUB NAME>", amqpConfig.namespaceName());
+        Assertions.assertEquals("<NAMESPACE NAME>", amqpConfig.eventHubName());
+        Assertions.assertEquals("<CONNECTION STRING>", amqpConfig.connectionString());
+        Assertions.assertEquals("<USER MANAGED IDENTITY ID>", amqpConfig.userManagedIdentityClientId());
     }
 }

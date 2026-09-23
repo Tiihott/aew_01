@@ -69,8 +69,8 @@ public final class RelpCommandConsumerMapBuilder {
         this.frameContexts = frameContexts;
     }
 
-    RelpCommandConsumerMapBuilder(int capacity) {
-        this(new HashMap<>(), new ArrayBlockingQueue<>(capacity));
+    RelpCommandConsumerMapBuilder(int frameContextsCapacity) {
+        this(new HashMap<>(), new ArrayBlockingQueue<>(frameContextsCapacity));
     };
 
     RelpCommandConsumerMapBuilder() {

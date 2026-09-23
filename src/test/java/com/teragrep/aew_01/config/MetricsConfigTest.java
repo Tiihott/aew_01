@@ -45,6 +45,8 @@
  */
 package com.teragrep.aew_01.config;
 
+import com.teragrep.aew_01.config.source.EnvironmentSource;
+import com.teragrep.aew_01.config.source.Sourceable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +54,19 @@ class MetricsConfigTest {
 
     @Test
     void prometheusPort() {
-        MetricsConfig metricsConfig = new MetricsConfig(1234);
+        MetricsConfig metricsConfig = new MetricsConfig(4321);
+        Assertions.assertEquals(4321, metricsConfig.prometheusPort());
+    }
+
+    @Test
+    void defaults() {
+        final String type = System.getProperty("config.source", "environment");
+        final Sourceable configSource;
+        if (!"environment".equals(type)) {
+            Assertions.fail("config.source not within supported types: [environment]");
+        }
+        configSource = new EnvironmentSource();
+        MetricsConfig metricsConfig = new MetricsConfig(configSource);
         Assertions.assertEquals(1234, metricsConfig.prometheusPort());
     }
 }

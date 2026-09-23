@@ -45,6 +45,8 @@
  */
 package com.teragrep.aew_01.config;
 
+import com.teragrep.aew_01.config.source.EnvironmentSource;
+import com.teragrep.aew_01.config.source.Sourceable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -52,31 +54,96 @@ class RelpConfigTest {
 
     @Test
     void port() {
-        RelpConfig relpConfig = new RelpConfig("1234", "tlsExample", "keystoreExample", "truststoreExample", "2");
+        RelpConfig relpConfig = new RelpConfig(
+                "1234",
+                "tlsExample",
+                "keystoreExample",
+                "truststoreExample",
+                "2",
+                "123456"
+        );
         Assertions.assertEquals("1234", relpConfig.port());
     }
 
     @Test
     void tls() {
-        RelpConfig relpConfig = new RelpConfig("1234", "tlsExample", "keystoreExample", "truststoreExample", "2");
+        RelpConfig relpConfig = new RelpConfig(
+                "1234",
+                "tlsExample",
+                "keystoreExample",
+                "truststoreExample",
+                "2",
+                "123456"
+        );
         Assertions.assertEquals("tlsExample", relpConfig.tls());
     }
 
     @Test
     void tlsKeystorePassword() {
-        RelpConfig relpConfig = new RelpConfig("1234", "tlsExample", "keystoreExample", "truststoreExample", "2");
+        RelpConfig relpConfig = new RelpConfig(
+                "1234",
+                "tlsExample",
+                "keystoreExample",
+                "truststoreExample",
+                "2",
+                "123456"
+        );
         Assertions.assertEquals("keystoreExample", relpConfig.tlsKeystorePassword());
     }
 
     @Test
     void tlsTruststorePassword() {
-        RelpConfig relpConfig = new RelpConfig("1234", "tlsExample", "keystoreExample", "truststoreExample", "2");
+        RelpConfig relpConfig = new RelpConfig(
+                "1234",
+                "tlsExample",
+                "keystoreExample",
+                "truststoreExample",
+                "2",
+                "123456"
+        );
         Assertions.assertEquals("truststoreExample", relpConfig.tlsTruststorePassword());
     }
 
     @Test
     void processingThreads() {
-        RelpConfig relpConfig = new RelpConfig("1234", "tlsExample", "keystoreExample", "truststoreExample", "2");
+        RelpConfig relpConfig = new RelpConfig(
+                "1234",
+                "tlsExample",
+                "keystoreExample",
+                "truststoreExample",
+                "2",
+                "123456"
+        );
         Assertions.assertEquals(2, relpConfig.processingThreads());
+    }
+
+    @Test
+    void frameContextsCapacity() {
+        RelpConfig relpConfig = new RelpConfig(
+                "1234",
+                "tlsExample",
+                "keystoreExample",
+                "truststoreExample",
+                "2",
+                "123456"
+        );
+        Assertions.assertEquals(123456, relpConfig.frameContextsCapacity());
+    }
+
+    @Test
+    void defaults() {
+        final String type = System.getProperty("config.source", "environment");
+        final Sourceable configSource;
+        if (!"environment".equals(type)) {
+            Assertions.fail("config.source not within supported types: [environment]");
+        }
+        configSource = new EnvironmentSource();
+        RelpConfig relpConfig = new RelpConfig(configSource);
+        Assertions.assertEquals("<RELP PORT>", relpConfig.port());
+        Assertions.assertEquals("<RELP TLS>", relpConfig.tls());
+        Assertions.assertEquals("<RELP TLS KEYSTORE PASSWORD>", relpConfig.tlsKeystorePassword());
+        Assertions.assertEquals("<RELP TLS TRUSTSTORE PASSWORD>", relpConfig.tlsTruststorePassword());
+        Assertions.assertEquals(1, relpConfig.processingThreads());
+        Assertions.assertEquals(1024, relpConfig.frameContextsCapacity());
     }
 }

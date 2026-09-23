@@ -77,15 +77,17 @@ public class Main {
 
     // Start the server
     public static void main(String[] args) {
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(1024); // TODO: Make capacity configurable
-        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
-
         final MetricRegistry metricRegistry = new MetricRegistry();
         final Sourceable configSource = getConfigSource();
         Meter relpMeter = metricRegistry.meter("relpMeter");
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
+
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(
+                new RelpConfig(configSource).frameContextsCapacity()
+        );
+        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         final JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
         final Slf4jReporter slf4jReporter = Slf4jReporter
