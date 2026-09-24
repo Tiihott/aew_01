@@ -45,26 +45,31 @@
  */
 package com.teragrep.aew_01;
 
-import com.codahale.metrics.MetricRegistry;
-import com.teragrep.aew_01.config.AmqpConfig;
-import com.teragrep.aew_01.config.MetricsConfig;
-import com.teragrep.aew_01.config.RelpConfig;
+import com.teragrep.aew_01.config.source.EnvironmentSource;
 import com.teragrep.aew_01.config.source.Sourceable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Main {
+public class ConfigSource {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigSource.class);
 
-    // Start the server
-    public static void main(String[] args) {
-        final MetricRegistry metricRegistry = new MetricRegistry();
-        final Sourceable configSource = ConfigSource.getConfigSource();
-        RelpConfig relpConfig = new RelpConfig(configSource);
-        AmqpConfig amqpConfig = new AmqpConfig(configSource);
-        MetricsConfig metricsConfig = new MetricsConfig(configSource);
-        SinkServer server = new SinkServer(metricRegistry, relpConfig, amqpConfig, metricsConfig);
-        server.start();
+    public ConfigSource() {
+    }
+
+    public static Sourceable getConfigSource() {
+        LOGGER.info("Getting config source...");
+        final String type = System.getProperty("config.source", "environment");
+
+        final Sourceable rv;
+        if ("environment".equals(type)) {
+            LOGGER.info("Config source set to environment.");
+            rv = new EnvironmentSource();
+        }
+        else {
+            throw new IllegalArgumentException("config.source not within supported types: [environment]");
+        }
+
+        return rv;
     }
 }

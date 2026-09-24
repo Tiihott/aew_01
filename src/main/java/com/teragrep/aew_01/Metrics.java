@@ -46,25 +46,45 @@
 package com.teragrep.aew_01;
 
 import com.codahale.metrics.MetricRegistry;
-import com.teragrep.aew_01.config.AmqpConfig;
-import com.teragrep.aew_01.config.MetricsConfig;
-import com.teragrep.aew_01.config.RelpConfig;
-import com.teragrep.aew_01.config.source.Sourceable;
+import com.codahale.metrics.Slf4jReporter;
+import com.codahale.metrics.jmx.JmxReporter;
+import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet;
+import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Main {
+import java.util.concurrent.TimeUnit;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+public class Metrics {
 
-    // Start the server
-    public static void main(String[] args) {
-        final MetricRegistry metricRegistry = new MetricRegistry();
-        final Sourceable configSource = ConfigSource.getConfigSource();
-        RelpConfig relpConfig = new RelpConfig(configSource);
-        AmqpConfig amqpConfig = new AmqpConfig(configSource);
-        MetricsConfig metricsConfig = new MetricsConfig(configSource);
-        SinkServer server = new SinkServer(metricRegistry, relpConfig, amqpConfig, metricsConfig);
-        server.start();
+    private static final Logger LOGGER = LoggerFactory.getLogger(Metrics.class);
+
+    static void startMetrics(
+            JmxReporter jmxReporter,
+            Slf4jReporter slf4jReporter,
+            MetricRegistry metricRegistry,
+            Server jettyServer
+    ) throws Exception {
+        LOGGER.info("Starting metrics for RELP sink for Microsoft Azure EventHub...");
+        jmxReporter.start();
+        slf4jReporter.start(1, TimeUnit.MINUTES);
+
+        // prometheus-exporter
+        PrometheusRegistry.defaultRegistry.register(new DropwizardExports(metricRegistry));
+
+        final ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        jettyServer.setHandler(context);
+
+        final PrometheusMetricsServlet metricsServlet = new PrometheusMetricsServlet();
+        final ServletHolder servletHolder = new ServletHolder(metricsServlet);
+        context.addServlet(servletHolder, "/metrics");
+
+        jettyServer.start();
+        LOGGER.info("Metrics started for RELP sink for Microsoft Azure EventHub.");
     }
 }
