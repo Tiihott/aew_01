@@ -133,7 +133,12 @@ class SinkServerTest {
                 "connectionString"
         );
         MetricsConfig metricsConfig = new MetricsConfig(9090);
-        SinkServer sinkServer = new SinkServer(metricRegistry, relpConfig, amqpConfig, metricsConfig);
+        final AMQP amqpClient = new AMQP(
+                amqpConfig.connectionString(),
+                amqpConfig.eventHubName(),
+                metricRegistry.meter("amqpMeter")
+        );
+        SinkServer sinkServer = new SinkServer(metricRegistry, relpConfig, metricsConfig, amqpClient);
         Thread thread = startServer(sinkServer);
         // Wait for the server to start
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));

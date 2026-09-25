@@ -45,12 +45,9 @@
  */
 package com.teragrep.aew_01;
 
-import com.azure.core.credential.TokenCredential;
-import com.azure.identity.ManagedIdentityCredentialBuilder;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.jmx.JmxReporter;
-import com.teragrep.aew_01.config.AmqpConfig;
 import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
@@ -58,7 +55,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public final class SinkServer implements AutoCloseable {
@@ -75,8 +71,8 @@ public final class SinkServer implements AutoCloseable {
     public SinkServer(
             MetricRegistry metricRegistry,
             RelpConfig relpConfig,
-            AmqpConfig amqpConfig,
-            MetricsConfig metricsConfig
+            MetricsConfig metricsConfig,
+            AMQP amqpClient
     ) {
         this.metricRegistry = metricRegistry;
         this.metricsConfig = metricsConfig;
@@ -85,7 +81,6 @@ public final class SinkServer implements AutoCloseable {
         );
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder
                 .buildRelpCommandConsumerMap();
-        ;
         this.relp = new RELP(
                 relpConfig.tls(),
                 relpConfig.port(),
@@ -94,31 +89,7 @@ public final class SinkServer implements AutoCloseable {
                 relpConfig.processingThreads(),
                 relpCommandConsumerMap
         );
-        if (Objects.equals(amqpConfig.connectionType(), "connectionString")) {
-            amqpClient = new AMQP(
-                    amqpConfig.connectionString(),
-                    amqpConfig.eventHubName(),
-                    metricRegistry.meter("amqpMeter")
-            );
-            LOGGER.info("amqpClient initialized using connection string");
-        }
-        else if (Objects.equals(amqpConfig.connectionType(), "passwordless")) {
-            // create credentials using the ManagedIdentityCredentialBuilder
-            LOGGER.info("Building EventHub credentials...");
-            final TokenCredential credential = new ManagedIdentityCredentialBuilder()
-                    .clientId(amqpConfig.userManagedIdentityClientId())
-                    .build();
-            LOGGER.debug("EventHub credentials built successfully");
-            amqpClient = new AMQP(
-                    credential,
-                    amqpConfig.eventHubName(),
-                    amqpConfig.namespaceName(),
-                    metricRegistry.meter("amqpMeter")
-            );
-        }
-        else {
-            throw new IllegalStateException("Unsupported connection type");
-        }
+        this.amqpClient = amqpClient;
         deferredSyslog = new DeferredSyslog(
                 relpCommandConsumerMapBuilder.frameContexts(),
                 amqpClient,

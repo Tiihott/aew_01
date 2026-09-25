@@ -45,6 +45,7 @@
  */
 package com.teragrep.aew_01;
 
+import com.azure.identity.ManagedIdentityCredentialBuilder;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aew_01.config.AmqpConfig;
 import com.teragrep.aew_01.config.MetricsConfig;
@@ -52,6 +53,8 @@ import com.teragrep.aew_01.config.RelpConfig;
 import com.teragrep.aew_01.config.source.Sourceable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Objects;
 
 public class Main {
 
@@ -64,7 +67,28 @@ public class Main {
         final RelpConfig relpConfig = new RelpConfig(configSource);
         final AmqpConfig amqpConfig = new AmqpConfig(configSource);
         final MetricsConfig metricsConfig = new MetricsConfig(configSource);
-        try (final SinkServer server = new SinkServer(metricRegistry, relpConfig, amqpConfig, metricsConfig)) {
+        final AMQP amqpClient;
+        if (Objects.equals(amqpConfig.connectionType(), "connectionString")) {
+            amqpClient = new AMQP(
+                    amqpConfig.connectionString(),
+                    amqpConfig.eventHubName(),
+                    metricRegistry.meter("amqpMeter")
+            );
+            LOGGER.info("amqpClient initialized using connection string");
+        }
+        else if (Objects.equals(amqpConfig.connectionType(), "passwordless")) {
+            amqpClient = new AMQP(
+                    new ManagedIdentityCredentialBuilder().clientId(amqpConfig.userManagedIdentityClientId()).build(),
+                    amqpConfig.eventHubName(),
+                    amqpConfig.namespaceName(),
+                    metricRegistry.meter("amqpMeter")
+            );
+            LOGGER.info("amqpClient initialized using passwordless connection");
+        }
+        else {
+            throw new IllegalStateException("Unsupported connection type");
+        }
+        try (final SinkServer server = new SinkServer(metricRegistry, relpConfig, metricsConfig, amqpClient)) {
             server.start();
         }
         catch (Exception e) {
