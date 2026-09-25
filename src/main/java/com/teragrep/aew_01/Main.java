@@ -61,10 +61,14 @@ public class Main {
     public static void main(String[] args) {
         final MetricRegistry metricRegistry = new MetricRegistry();
         final Sourceable configSource = ConfigSource.getConfigSource();
-        RelpConfig relpConfig = new RelpConfig(configSource);
-        AmqpConfig amqpConfig = new AmqpConfig(configSource);
-        MetricsConfig metricsConfig = new MetricsConfig(configSource);
-        SinkServer server = new SinkServer(metricRegistry, relpConfig, amqpConfig, metricsConfig);
-        server.start();
+        final RelpConfig relpConfig = new RelpConfig(configSource);
+        final AmqpConfig amqpConfig = new AmqpConfig(configSource);
+        final MetricsConfig metricsConfig = new MetricsConfig(configSource);
+        try (final SinkServer server = new SinkServer(metricRegistry, relpConfig, amqpConfig, metricsConfig)) {
+            server.start();
+        } catch (Exception e) {
+            LOGGER.error("Error starting server", e);
+            throw new RuntimeException(e);
+        }
     }
 }
