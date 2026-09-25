@@ -77,7 +77,7 @@ public final class RelpCommandConsumerMapBuilder {
         this(new HashMap<>(), new ArrayBlockingQueue<>(1024));
     }
 
-    public void buildRelpCommandConsumerMap() {
+    public Map<String, RelpEvent> buildRelpCommandConsumerMap() {
         if (!relpCommandConsumerMap.isEmpty()) {
             throw new IllegalStateException("RelpCommandConsumerMap is already built");
         }
@@ -96,9 +96,6 @@ public final class RelpCommandConsumerMapBuilder {
             }
         };
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
-    }
-
-    public Map<String, RelpEvent> relpCommandConsumerMap() {
         return relpCommandConsumerMap;
     }
 
