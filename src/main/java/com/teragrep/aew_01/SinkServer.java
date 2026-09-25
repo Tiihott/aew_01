@@ -47,32 +47,30 @@ package com.teragrep.aew_01;
 
 import com.azure.core.credential.TokenCredential;
 import com.azure.identity.ManagedIdentityCredentialBuilder;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.jmx.JmxReporter;
 import com.teragrep.aew_01.config.AmqpConfig;
 import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
-import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public final class SinkServer {
+public final class SinkServer implements AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SinkServer.class);
 
     private final MetricRegistry metricRegistry;
-    private final Meter relpMeter;
-    private final Meter amqpMeter;
-    private final AmqpConfig amqpConfig;
-    private final RelpConfig relpConfig;
     private final MetricsConfig metricsConfig;
+    private final RELP relp;
+    private final DeferredSyslog deferredSyslog;
+    private final AMQP amqpClient;
+    Thread deferredProcessingThread;
 
     public SinkServer(
             MetricRegistry metricRegistry,
@@ -81,21 +79,54 @@ public final class SinkServer {
             MetricsConfig metricsConfig
     ) {
         this.metricRegistry = metricRegistry;
-        this.relpMeter = metricRegistry.meter("relpMeter");
-        this.amqpMeter = metricRegistry.meter("amqpMeter");
-        this.amqpConfig = amqpConfig;
-        this.relpConfig = relpConfig;
         this.metricsConfig = metricsConfig;
-    }
-
-    public void start() {
         final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(
                 relpConfig.frameContextsCapacity()
         );
-        relpCommandConsumerMapBuilder.buildRelpCommandConsumerMap();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder
+                .buildRelpCommandConsumerMap();
+        ;
+        this.relp = new RELP(
+                relpConfig.tls(),
+                relpConfig.port(),
+                relpConfig.tlsTruststorePassword(),
+                relpConfig.tlsKeystorePassword(),
+                relpConfig.processingThreads(),
+                relpCommandConsumerMap
+        );
+        if (Objects.equals(amqpConfig.connectionType(), "connectionString")) {
+            amqpClient = new AMQP(
+                    amqpConfig.connectionString(),
+                    amqpConfig.eventHubName(),
+                    metricRegistry.meter("amqpMeter")
+            );
+            LOGGER.info("amqpClient initialized using connection string");
+        }
+        else if (Objects.equals(amqpConfig.connectionType(), "passwordless")) {
+            // create credentials using the ManagedIdentityCredentialBuilder
+            LOGGER.info("Building EventHub credentials...");
+            final TokenCredential credential = new ManagedIdentityCredentialBuilder()
+                    .clientId(amqpConfig.userManagedIdentityClientId())
+                    .build();
+            LOGGER.debug("EventHub credentials built successfully");
+            amqpClient = new AMQP(
+                    credential,
+                    amqpConfig.eventHubName(),
+                    amqpConfig.namespaceName(),
+                    metricRegistry.meter("amqpMeter")
+            );
+        }
+        else {
+            throw new IllegalStateException("Unsupported connection type");
+        }
+        deferredSyslog = new DeferredSyslog(
+                relpCommandConsumerMapBuilder.frameContexts(),
+                amqpClient,
+                metricRegistry.meter("relpMeter")
+        );
+    }
 
+    public void start() {
         final JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
         final Slf4jReporter slf4jReporter = Slf4jReporter
                 .forRegistry(metricRegistry)
@@ -111,35 +142,19 @@ public final class SinkServer {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        // load configs etc. and initialize AMQP and RELP
-        // create credentials using the ManagedIdentityCredentialBuilder
-        LOGGER.info("Building EventHub credentials...");
-        final TokenCredential credential = new ManagedIdentityCredentialBuilder()
-                .clientId(amqpConfig.userManagedIdentityClientId())
-                .build();
-        LOGGER.debug("EventHub credentials built successfully");
-
-        final AMQP amqpClient = new AMQP(credential, amqpConfig.eventHubName(), amqpConfig.namespaceName(), amqpMeter);
-        Thread deferredProcessingThread;
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         /*
          * Start deferred processing before running the RELP server, otherwise our client will wait forever for a response
          */
         deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
-        try (
-                RELP relp = new RELP(
-                        relpConfig.tls(),
-                        relpConfig.port(),
-                        relpConfig.tlsTruststorePassword(),
-                        relpConfig.tlsKeystorePassword(),
-                        relpConfig.processingThreads(),
-                        relpCommandConsumerMap
-                );
-        ) {
-            relp.run();
-        }
+
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+    }
+
+    @Override
+    public void close() throws Exception {
+        relp.close();
         amqpClient.close();
         /*
          * Stop the deferred processing thread
