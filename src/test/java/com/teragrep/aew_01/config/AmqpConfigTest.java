@@ -58,7 +58,8 @@ class AmqpConfigTest {
                 "nameExample",
                 "namespaceExample",
                 "connectionStringExample",
-                "clientIdExample"
+                "clientIdExample",
+                "connectionString"
         );
         Assertions.assertEquals("namespaceExample", amqpConfig.namespaceName());
     }
@@ -69,7 +70,8 @@ class AmqpConfigTest {
                 "nameExample",
                 "namespaceExample",
                 "connectionStringExample",
-                "clientIdExample"
+                "clientIdExample",
+                "connectionString"
         );
         Assertions.assertEquals("nameExample", amqpConfig.eventHubName());
     }
@@ -80,7 +82,8 @@ class AmqpConfigTest {
                 "nameExample",
                 "namespaceExample",
                 "connectionStringExample",
-                "clientIdExample"
+                "clientIdExample",
+                "connectionString"
         );
         Assertions.assertEquals("connectionStringExample", amqpConfig.connectionString());
     }
@@ -91,9 +94,22 @@ class AmqpConfigTest {
                 "nameExample",
                 "namespaceExample",
                 "connectionStringExample",
-                "clientIdExample"
+                "clientIdExample",
+                "connectionString"
         );
         Assertions.assertEquals("clientIdExample", amqpConfig.userManagedIdentityClientId());
+    }
+
+    @Test
+    void connectionType() {
+        AmqpConfig amqpConfig = new AmqpConfig(
+                "nameExample",
+                "namespaceExample",
+                "connectionStringExample",
+                "clientIdExample",
+                "connectionString"
+        );
+        Assertions.assertEquals("connectionString", amqpConfig.connectionType());
     }
 
     @Test
