@@ -66,7 +66,8 @@ public class Main {
         final MetricsConfig metricsConfig = new MetricsConfig(configSource);
         try (final SinkServer server = new SinkServer(metricRegistry, relpConfig, amqpConfig, metricsConfig)) {
             server.start();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             LOGGER.error("Error starting server", e);
             throw new RuntimeException(e);
         }
