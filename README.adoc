@@ -1,35 +1,55 @@
-// Before publishing your new repository:
-// 1. Write the readme file
-// 2. Update the issues link in Contributing section in the readme file
-// 3. Update the discussion link in config.yml file in .github/ISSUE_TEMPLATE directory
+= AEW_01: RELP sink for Microsoft Azure EventHub
 
-= repo-template
+This package provides containerized application for continually receiving RELP messages and writing them to Microsoft Azure EventHub.
 
-// Add a short description of your project. Tell what your project does and what it's used for.
+== Configuration
 
-This is a template repository for Teragrep organization.
+All the configurations for the application are made using following environment variables:
+----
+RELP_PORT=<Port used by the RELP server>
+RELP_TLS=<TLS for RELP server>
+RELP_TLSKEYSTOREPASSWORD=<TLS keystore password for RELP sever>
+RELP_TLSTRUSTSTOREPASSWORD=<TLS truststore password for RELP server>
+RELP_PROCESSINGTHREADS=<Number of theads allocated for RELP server>
+RELP_FRAMECONTEXTSCAPACITY=<Maximum size of the queue for deferred processing of RELP messages>
 
-== Features
+AZURE_NAMESPACE=<EventHub namespace>
+AZURE_EVENTHUB=<EventHub name>
+AZURE_CONNECTIONSTRING=<EventHub connection string>
+AZURE_USERMANAGEDIDENTITYCLIENTID=<EventHub client id>
+AZURE_CONNECTIONTYPE=<EventHub connection type, passwordless or connection string>
 
-// List your project's features
+METRICS_PROMETHEUSPORT=<Port for Prometheus to deliver metrics>
+----
 
 == Documentation
 
 See the official documentation on https://docs.teragrep.com[docs.teragrep.com].
 
-== Limitations
+== How to compile
 
-// If your project has limitations, please list them. Otherwise remove this section.
+Compile and run the tests by calling:
 
-== How to [compile/use/implement]
+----
+mvn clean install
+----
 
-// add instructions how people can start to use your project
+In case of podman testcontainers broken pipeline error, create or modify containers.conf file to fix it:
+(`/usr/share/containers/containers.conf`,
+`/etc/containers/containers.conf`,
+`$HOME/.config/containers/containers.conf`)
+
+Set the `service_timeout` to `0` in `[engine]` section:
+
+----
+[engine]
+service_timeout=0
+----
+
 
 == Contributing
 
-// Change the repository name in the issues link to match with your project's name
-
-You can involve yourself with our project by https://github.com/teragrep/repo-template/issues/new/choose[opening an issue] or submitting a pull request.
+You can involve yourself with our project by https://github.com/teragrep/aew_01/issues/new/choose[opening an issue] or submitting a pull request.
 
 Contribution requirements:
 
