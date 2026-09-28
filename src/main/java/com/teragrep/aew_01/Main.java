@@ -55,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 
 public class Main {
 
@@ -90,6 +91,20 @@ public class Main {
         }
         try (final SinkServer server = new SinkServer(metricRegistry, relpConfig, metricsConfig, amqpClient)) {
             server.start();
+            // Keep SinkServer running using CountDownLatch
+            final CountDownLatch latch = new CountDownLatch(1);
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                LOGGER.debug("Stopping SinkServer");
+                latch.countDown();
+            }));
+            while (true)
+                try {
+                    latch.await();
+                    break;
+                }
+                catch (InterruptedException e) {
+                    LOGGER.debug("Interruption in main thread latch.await(), retrying", e);
+                }
         }
         catch (Exception e) {
             LOGGER.error("Error starting server", e);

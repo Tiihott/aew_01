@@ -125,6 +125,7 @@ public final class SinkServer implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        LOGGER.debug("Closing SinkServer");
         relp.close();
         amqpClient.close();
         /*
