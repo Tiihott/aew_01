@@ -57,11 +57,11 @@ public final class AmqpConfig {
 
     public AmqpConfig(final Sourceable configSource) {
         this(
-                configSource.source("azure.namespace", "<NAMESPACE NAME>"),
-                configSource.source("azure.eventhub", "<EVENT HUB NAME>"),
-                configSource.source("azure.connectionString", "<CONNECTION STRING>"),
-                configSource.source("azure.userManagedIdentityClientId", "<USER MANAGED IDENTITY ID>"),
-                configSource.source("azure.connectionType", "passwordless")
+                configSource.source("azure.namespace"),
+                configSource.source("azure.eventhub"),
+                configSource.source("azure.connectionString"),
+                configSource.source("azure.userManagedIdentityClientId"),
+                configSource.source("azure.connectionType")
         );
     }
 

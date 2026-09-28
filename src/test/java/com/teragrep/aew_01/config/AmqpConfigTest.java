@@ -113,17 +113,13 @@ class AmqpConfigTest {
     }
 
     @Test
-    void defaults() {
+    void missingEnvironmentVariablesException() {
         final String type = System.getProperty("config.source", "environment");
         final Sourceable configSource;
         if (!"environment".equals(type)) {
             Assertions.fail("config.source not within supported types: [environment]");
         }
         configSource = new EnvironmentSource();
-        AmqpConfig amqpConfig = new AmqpConfig(configSource);
-        Assertions.assertEquals("<EVENT HUB NAME>", amqpConfig.namespaceName());
-        Assertions.assertEquals("<NAMESPACE NAME>", amqpConfig.eventHubName());
-        Assertions.assertEquals("<CONNECTION STRING>", amqpConfig.connectionString());
-        Assertions.assertEquals("<USER MANAGED IDENTITY ID>", amqpConfig.userManagedIdentityClientId());
+        Assertions.assertThrows(IllegalStateException.class, () -> new AmqpConfig(configSource));
     }
 }

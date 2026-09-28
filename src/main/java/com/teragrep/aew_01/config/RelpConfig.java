@@ -58,12 +58,12 @@ public final class RelpConfig {
 
     public RelpConfig(final Sourceable configSource) {
         this(
-                configSource.source("relp.port", "<RELP PORT>"),
-                configSource.source("relp.tls", "<RELP TLS>"),
-                configSource.source("relp.tlsKeystorePassword", "<RELP TLS KEYSTORE PASSWORD>"),
-                configSource.source("relp.tlsTruststorePassword", "<RELP TLS TRUSTSTORE PASSWORD>"),
-                configSource.source("relp.processingThreads", "1"),
-                configSource.source("relp.frameContextsCapacity", "1024")
+                configSource.source("relp.port"),
+                configSource.source("relp.tls"),
+                configSource.source("relp.tlsKeystorePassword"),
+                configSource.source("relp.tlsTruststorePassword"),
+                configSource.source("relp.processingThreads"),
+                configSource.source("relp.frameContextsCapacity")
         );
     }
 

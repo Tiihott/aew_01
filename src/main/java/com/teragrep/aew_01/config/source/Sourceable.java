@@ -47,5 +47,5 @@ package com.teragrep.aew_01.config.source;
 
 public interface Sourceable {
 
-    public abstract String source(String name, String defaultValue);
+    public abstract String source(String name);
 }

@@ -57,10 +57,13 @@ public final class EnvironmentSource implements Sourceable {
     private final Map<String, String> envValues = System.getenv();
 
     @Override
-    public String source(String name, String defaultValue) {
+    public String source(String name) {
         final String variable = name.toUpperCase().replace(".", "_");
         LOGGER.debug("sourcing name <[{}]> as environment variable <[{}]>", name, variable);
-        final String rv = envValues.getOrDefault(variable, defaultValue);
+        final String rv = envValues.get(variable);
+        if (rv == null) {
+            throw new IllegalStateException("environment variable <[" + variable + "]> was not defined");
+        }
         LOGGER.debug("sourced value <[{}]> for variable <[{}]>", rv, variable);
         return rv;
     }

@@ -59,14 +59,13 @@ class MetricsConfigTest {
     }
 
     @Test
-    void defaults() {
+    void missingEnvironmentVariablesException() {
         final String type = System.getProperty("config.source", "environment");
         final Sourceable configSource;
         if (!"environment".equals(type)) {
             Assertions.fail("config.source not within supported types: [environment]");
         }
         configSource = new EnvironmentSource();
-        MetricsConfig metricsConfig = new MetricsConfig(configSource);
-        Assertions.assertEquals(1234, metricsConfig.prometheusPort());
+        Assertions.assertThrows(IllegalStateException.class, () -> new MetricsConfig(configSource));
     }
 }

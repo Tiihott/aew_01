@@ -131,19 +131,13 @@ class RelpConfigTest {
     }
 
     @Test
-    void defaults() {
+    void missingEnvironmentVariablesException() {
         final String type = System.getProperty("config.source", "environment");
         final Sourceable configSource;
         if (!"environment".equals(type)) {
             Assertions.fail("config.source not within supported types: [environment]");
         }
         configSource = new EnvironmentSource();
-        RelpConfig relpConfig = new RelpConfig(configSource);
-        Assertions.assertEquals("<RELP PORT>", relpConfig.port());
-        Assertions.assertEquals("<RELP TLS>", relpConfig.tls());
-        Assertions.assertEquals("<RELP TLS KEYSTORE PASSWORD>", relpConfig.tlsKeystorePassword());
-        Assertions.assertEquals("<RELP TLS TRUSTSTORE PASSWORD>", relpConfig.tlsTruststorePassword());
-        Assertions.assertEquals(1, relpConfig.processingThreads());
-        Assertions.assertEquals(1024, relpConfig.frameContextsCapacity());
+        Assertions.assertThrows(IllegalStateException.class, () -> new RelpConfig(configSource));
     }
 }
