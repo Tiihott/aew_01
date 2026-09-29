@@ -1,6 +1,6 @@
 = AEW_01: RELP sink for Microsoft Azure EventHub
 
-This package provides containerized application for continually receiving RELP messages and writing them to Microsoft Azure EventHub.
+This package provides containerized application for continually receiving RELP messages and writing them to Microsoft Azure EventHub. The containerized application can be run on Microsoft Azure Container Apps platform.
 
 == Configuration
 
@@ -24,7 +24,29 @@ METRICS_PROMETHEUSPORT=<Port for Prometheus to deliver metrics>
 
 If any of the configurations are missing from environment variables, an exception is thrown by the application. In certain configurations some of the variables are not used, in that case the said variables should be set to `N/A`.
 
-For EventHub configurations, the `AZURE_CONNECTIONTYPE` defines if the connection is done using either the `AZURE_CONNECTIONSTRING` or `AZURE_USERMANAGEDIDENTITYCLIENTID`.
+`RELP_PORT` variable defines the port used by the RELP server.
+
+`RELP_TLS` variable defines if TLS is enabled for the server or not.
+
+`RELP_TLSKEYSTOREPASSWORD` variable defines the keystore password for the TLS connection.
+
+`RELP_TLSTRUSTSTOREPASSWORD` variable defines the truststore password for the TLS connection.
+
+`RELP_PROCESSINGTHREADS` variable defines the amount of threads allocated for the RELP server.
+
+`RELP_FRAMECONTEXTSCAPACITY` variable defines the maximum size of the queue used for deferred processing of RELP messages.
+
+`AZURE_NAMESPACE` variable defines the EventHub namespace used by the AMQP connection.
+
+`AZURE_EVENTHUB` variable defines the EventHub name used by the AMQP connection.
+
+`AZURE_CONNECTIONSTRING` variable defines the connection string used for connecting to EventHub.
+
+`AZURE_USERMANAGEDIDENTITYCLIENTID` variable defines the passwordless client id used for connecting to EventHub.
+
+`AZURE_CONNECTIONTYPE` defines if the connection is done using either the `AZURE_CONNECTIONSTRING` or `AZURE_USERMANAGEDIDENTITYCLIENTID`.
+
+`METRICS_PROMETHEUSPORT` defines the port used by Prometheus for the application metrics.
 
 == Documentation
 
