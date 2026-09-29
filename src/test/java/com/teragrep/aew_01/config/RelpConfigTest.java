@@ -54,79 +54,37 @@ class RelpConfigTest {
 
     @Test
     void port() {
-        RelpConfig relpConfig = new RelpConfig(
-                "1234",
-                "false",
-                "keystoreExample",
-                "truststoreExample",
-                "2",
-                "123456"
-        );
+        RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample", "2", "123456");
         Assertions.assertEquals("1234", relpConfig.port());
     }
 
     @Test
     void tls() {
-        RelpConfig relpConfig = new RelpConfig(
-                "1234",
-                "true",
-                "keystoreExample",
-                "truststoreExample",
-                "2",
-                "123456"
-        );
+        RelpConfig relpConfig = new RelpConfig("1234", "true", "keystoreExample", "truststoreExample", "2", "123456");
         Assertions.assertEquals("true", relpConfig.tls());
     }
 
     @Test
     void tlsKeystorePassword() {
-        RelpConfig relpConfig = new RelpConfig(
-                "1234",
-                "false",
-                "keystoreExample",
-                "truststoreExample",
-                "2",
-                "123456"
-        );
+        RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample", "2", "123456");
         Assertions.assertEquals("keystoreExample", relpConfig.tlsKeystorePassword());
     }
 
     @Test
     void tlsTruststorePassword() {
-        RelpConfig relpConfig = new RelpConfig(
-                "1234",
-                "false",
-                "keystoreExample",
-                "truststoreExample",
-                "2",
-                "123456"
-        );
+        RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample", "2", "123456");
         Assertions.assertEquals("truststoreExample", relpConfig.tlsTruststorePassword());
     }
 
     @Test
     void processingThreads() {
-        RelpConfig relpConfig = new RelpConfig(
-                "1234",
-                "false",
-                "keystoreExample",
-                "truststoreExample",
-                "2",
-                "123456"
-        );
+        RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample", "2", "123456");
         Assertions.assertEquals(2, relpConfig.processingThreads());
     }
 
     @Test
     void frameContextsCapacity() {
-        RelpConfig relpConfig = new RelpConfig(
-                "1234",
-                "false",
-                "keystoreExample",
-                "truststoreExample",
-                "2",
-                "123456"
-        );
+        RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample", "2", "123456");
         Assertions.assertEquals(123456, relpConfig.frameContextsCapacity());
     }
 
