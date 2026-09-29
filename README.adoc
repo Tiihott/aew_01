@@ -17,10 +17,12 @@ AZURE_NAMESPACE=<EventHub namespace>
 AZURE_EVENTHUB=<EventHub name>
 AZURE_CONNECTIONSTRING=<EventHub connection string>
 AZURE_USERMANAGEDIDENTITYCLIENTID=<EventHub client id>
-AZURE_CONNECTIONTYPE=<EventHub connection type, passwordless or connection string>
+AZURE_CONNECTIONTYPE=<EventHub connection type, PASSWORDLESS or CONNECTIONSTRING>
 
 METRICS_PROMETHEUSPORT=<Port for Prometheus to deliver metrics>
 ----
+
+If any of the configurations are missing from environment variables, an exception is thrown.
 
 == Documentation
 
@@ -32,6 +34,13 @@ Compile and run the tests by calling:
 
 ----
 mvn clean install
+----
+
+Tests use Podman and Testcontainers to emulate EventHub environment. If Testcontainers is unable to find a valid Docker environment, please make sure to install Podman and run the following commands:
+
+----
+systemctl start --user podman.socket;
+export DOCKER_HOST="unix:///run/user/$(id -u)/podman/podman.sock";
 ----
 
 In case of podman testcontainers broken pipeline error, create or modify containers.conf file to fix it:
