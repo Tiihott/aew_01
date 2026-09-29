@@ -7,7 +7,7 @@ This package provides containerized application for continually receiving RELP m
 All the configurations for the application are made using following environment variables:
 ----
 RELP_PORT=<Port used by the RELP server>
-RELP_TLS=<TLS for RELP server>
+RELP_TLS=<Boolean to enable or disable TLS for RELP, TRUE or FALSE>
 RELP_TLSKEYSTOREPASSWORD=<TLS keystore password for RELP sever>
 RELP_TLSTRUSTSTOREPASSWORD=<TLS truststore password for RELP server>
 RELP_PROCESSINGTHREADS=<Number of theads allocated for RELP server>
@@ -22,7 +22,9 @@ AZURE_CONNECTIONTYPE=<EventHub connection type, PASSWORDLESS or CONNECTIONSTRING
 METRICS_PROMETHEUSPORT=<Port for Prometheus to deliver metrics>
 ----
 
-If any of the configurations are missing from environment variables, an exception is thrown.
+If any of the configurations are missing from environment variables, an exception is thrown by the application.
+
+For EventHub configurations, the `AZURE_CONNECTIONTYPE` defines if the connection is done using either the `AZURE_CONNECTIONSTRING` or `AZURE_USERMANAGEDIDENTITYCLIENTID`.
 
 == Documentation
 
