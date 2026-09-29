@@ -56,7 +56,7 @@ class RelpConfigTest {
     void port() {
         RelpConfig relpConfig = new RelpConfig(
                 "1234",
-                "tlsExample",
+                "false",
                 "keystoreExample",
                 "truststoreExample",
                 "2",
@@ -69,20 +69,20 @@ class RelpConfigTest {
     void tls() {
         RelpConfig relpConfig = new RelpConfig(
                 "1234",
-                "tlsExample",
+                "true",
                 "keystoreExample",
                 "truststoreExample",
                 "2",
                 "123456"
         );
-        Assertions.assertEquals("tlsExample", relpConfig.tls());
+        Assertions.assertEquals("true", relpConfig.tls());
     }
 
     @Test
     void tlsKeystorePassword() {
         RelpConfig relpConfig = new RelpConfig(
                 "1234",
-                "tlsExample",
+                "false",
                 "keystoreExample",
                 "truststoreExample",
                 "2",
@@ -95,7 +95,7 @@ class RelpConfigTest {
     void tlsTruststorePassword() {
         RelpConfig relpConfig = new RelpConfig(
                 "1234",
-                "tlsExample",
+                "false",
                 "keystoreExample",
                 "truststoreExample",
                 "2",
@@ -108,7 +108,7 @@ class RelpConfigTest {
     void processingThreads() {
         RelpConfig relpConfig = new RelpConfig(
                 "1234",
-                "tlsExample",
+                "false",
                 "keystoreExample",
                 "truststoreExample",
                 "2",
@@ -121,7 +121,7 @@ class RelpConfigTest {
     void frameContextsCapacity() {
         RelpConfig relpConfig = new RelpConfig(
                 "1234",
-                "tlsExample",
+                "false",
                 "keystoreExample",
                 "truststoreExample",
                 "2",
