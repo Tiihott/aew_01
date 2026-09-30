@@ -49,7 +49,6 @@ import com.teragrep.rlp_01.RelpCommand;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
-import com.teragrep.rlp_03.frame.delegate.event.RelpEventOpen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +84,7 @@ public final class RelpCommandConsumerMapBuilder {
         if (!relpCommandConsumerMap.isEmpty()) {
             throw new IllegalStateException("RelpCommandConsumerMap is already built");
         }
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new RelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
         RelpEvent syslogRelpEvent = new RelpEvent() {
 

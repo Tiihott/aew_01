@@ -88,7 +88,6 @@ public class DeferredSyslog implements Runnable {
                     continue;
                 }
 
-                // try-with-resources so frame is closed and freed,
                 RelpFrame relpFrame = frameContext.relpFrame();
                 EventData eventData = new EventData(relpFrame.payload().toString());
                 CompletableFuture<Void> acceptTransactionFuture = CompletableFuture
