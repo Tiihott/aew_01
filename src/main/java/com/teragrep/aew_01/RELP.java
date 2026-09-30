@@ -106,7 +106,7 @@ public final class RELP implements Runnable, AutoCloseable {
         this.tlsKeystore = tlsKeystore;
         this.tlsKeystorePassword = tlsKeystorePassword;
         this.frameDelegateSupplier = () -> {
-            LOGGER.debug("Providing frameDelegate for a connection");
+            LOGGER.info("Providing frameDelegate for a new connection");
             return new DefaultFrameDelegate(syslogConsumer);
         };
         try {
@@ -132,7 +132,7 @@ public final class RELP implements Runnable, AutoCloseable {
         this.tlsKeystore = tlsKeystore;
         this.tlsKeystorePassword = tlsKeystorePassword;
         this.frameDelegateSupplier = () -> {
-            LOGGER.debug("Providing frameDelegate for a connection");
+            LOGGER.info("Providing frameDelegate for a new connection");
             return new DefaultFrameDelegate(relpCommandConsumerMap);
         };
         try {

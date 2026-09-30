@@ -50,6 +50,8 @@ import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEventOpen;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +59,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public final class RelpCommandConsumerMapBuilder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpCommandConsumerMapBuilder.class);
 
     private final Map<String, RelpEvent> relpCommandConsumerMap;
     private final BlockingQueue<FrameContext> frameContexts;
@@ -87,6 +91,12 @@ public final class RelpCommandConsumerMapBuilder {
 
             @Override
             public void accept(FrameContext frameContext) {
+                LOGGER
+                        .debug(
+                                "RELP received FrameContext: txn={} command={} endOfTransfer={}",
+                                frameContext.relpFrame().txn(), frameContext.relpFrame().command(),
+                                frameContext.relpFrame().endOfTransfer()
+                        );
                 frameContexts.add(frameContext);
             }
 
