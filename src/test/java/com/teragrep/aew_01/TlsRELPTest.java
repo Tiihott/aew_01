@@ -149,4 +149,31 @@ public class TlsRELPTest {
         relp.close();
     }
 
+    @Test
+    void testConnectionException() {
+        MetricRegistry metricRegistry = new MetricRegistry();
+        Meter relpMeter = metricRegistry.meter("relpMeter");
+
+        final RELP relp = new RELP(
+                "true",
+                "2601",
+                "src/test/resources/keystore-server.jks",
+                "changeit",
+                1,
+                frameContext -> {
+                    LOGGER.info(frameContext.relpFrame().payload().toString());
+                    relpMeter.mark();
+                }
+        );
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
+        // Wait for the server to start
+        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        // Try connecting to the RELP server using plain RelpConnection
+        final RelpConnection relpConnection = new RelpConnection();
+        final int port = 2601;
+        Assertions.assertThrows(IOException.class, () -> relpConnection.connect("localhost", port));
+        relp.close();
+    }
+
 }
