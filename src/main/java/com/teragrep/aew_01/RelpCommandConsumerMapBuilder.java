@@ -90,13 +90,13 @@ public final class RelpCommandConsumerMapBuilder {
 
             @Override
             public void accept(FrameContext frameContext) {
+                frameContexts.add(frameContext);
                 LOGGER
                         .debug(
-                                "RELP received FrameContext: txn={} command={} endOfTransfer={}",
+                                "Accepted new RELP SYSLOG event for deferred processing: txn={} command={} endOfTransfer={}",
                                 frameContext.relpFrame().txn(), frameContext.relpFrame().command(),
                                 frameContext.relpFrame().endOfTransfer()
                         );
-                frameContexts.add(frameContext);
             }
 
             @Override

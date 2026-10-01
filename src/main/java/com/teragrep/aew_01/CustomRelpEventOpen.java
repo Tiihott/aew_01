@@ -102,8 +102,9 @@ public final class CustomRelpEventOpen extends RelpEvent {
             frameContext.establishedContext().egress().accept(frame.toWriteable());
             LOGGER
                     .info(
-                            "Accepted new connection from peer: {}",
-                            frameContext.establishedContext().socket().getTransportInfo().getPeerAddress()
+                            "Accepted new RELP session from peer address <{}> and peer port <{}>",
+                            frameContext.establishedContext().socket().getTransportInfo().getPeerAddress(),
+                            frameContext.establishedContext().socket().getTransportInfo().getPeerPort()
                     );
         }
         finally {
