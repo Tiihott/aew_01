@@ -75,12 +75,30 @@ public final class RelpConfig {
             String processingThreads,
             String frameContextsCapacity
     ) {
+        this(
+                port,
+                tls,
+                tlsKeystorePassword,
+                tlsTruststorePassword,
+                Integer.parseInt(processingThreads),
+                Integer.parseInt(frameContextsCapacity)
+        );
+    }
+
+    public RelpConfig(
+            String port,
+            String tls,
+            String tlsKeystorePassword,
+            String tlsTruststorePassword,
+            int processingThreads,
+            int frameContextsCapacity
+    ) {
         this.port = port;
         this.tls = tls;
         this.tlsKeystorePassword = tlsKeystorePassword;
         this.tlsTruststorePassword = tlsTruststorePassword;
-        this.processingThreads = Integer.parseInt(processingThreads);
-        this.frameContextsCapacity = Integer.parseInt(frameContextsCapacity);
+        this.processingThreads = processingThreads;
+        this.frameContextsCapacity = frameContextsCapacity;
     }
 
     public String port() {
