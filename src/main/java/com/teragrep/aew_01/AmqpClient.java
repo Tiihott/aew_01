@@ -64,15 +64,15 @@ public final class AmqpClient {
 
     // Connection using connectionString
     public AmqpClient(final String connectionString, final String eventHubName, Meter meter) {
-        this.amqpMeter = meter;
         LOGGER
                 .debug(
                         "Creating an EventHubProducerClient with Event Hub name <[{}]> and connection string <[{}]>",
                         eventHubName, connectionString
                 );
-        this.producerClient = new EventHubClientBuilder()
-                .connectionString(connectionString, eventHubName)
-                .buildAsyncProducerClient();
+        this(
+                new EventHubClientBuilder().connectionString(connectionString, eventHubName).buildAsyncProducerClient(),
+                meter
+        );
     }
 
     // Connection using TokenCredential
@@ -82,17 +82,20 @@ public final class AmqpClient {
             final String fullyQualifiedNamespace,
             Meter meter
     ) {
-        this.amqpMeter = meter;
         LOGGER
                 .debug(
                         "Creating an EventHubProducerClient with namespace <[{}]> and Event Hub name <[{}]>",
                         fullyQualifiedNamespace, eventHubName
                 );
-        this.producerClient = new EventHubClientBuilder()
-                .fullyQualifiedNamespace(fullyQualifiedNamespace)
-                .eventHubName(eventHubName)
-                .credential(credential)
-                .buildAsyncProducerClient();
+        this(
+                new EventHubClientBuilder().fullyQualifiedNamespace(fullyQualifiedNamespace).eventHubName(eventHubName).credential(credential).buildAsyncProducerClient(), meter
+        );
+    }
+
+    //main constructor
+    public AmqpClient(EventHubProducerAsyncClient producerClient, Meter amqpMeter) {
+        this.amqpMeter = amqpMeter;
+        this.producerClient = producerClient;
     }
 
     public CompletableFuture<Void> addEvents(final EventData eventData) {
