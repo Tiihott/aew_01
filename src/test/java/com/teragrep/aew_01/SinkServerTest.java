@@ -133,7 +133,7 @@ class SinkServerTest {
                 "connectionString"
         );
         MetricsConfig metricsConfig = new MetricsConfig(9090);
-        final AMQP amqpClient = new AMQP(
+        final AmqpClient amqpClient = new AmqpClient(
                 amqpConfig.connectionString(),
                 amqpConfig.eventHubName(),
                 metricRegistry.meter("amqpMeter")

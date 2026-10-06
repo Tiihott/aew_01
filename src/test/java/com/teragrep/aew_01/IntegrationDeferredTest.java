@@ -131,7 +131,7 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -158,12 +158,12 @@ public class IntegrationDeferredTest {
         }
         sendThreads.add(sendBatch(port, relpBatch));
 
-        // Wait for the AMQP to flush all events to eventhub
+        // Wait for the AmqpClient to flush all events to eventhub
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 2) {
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/2", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/2", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         while (receivedPayloads.size() != 0 && receivedPayloads.size() < 2) {
@@ -231,7 +231,7 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -258,12 +258,12 @@ public class IntegrationDeferredTest {
         }
         sendThreads.add(sendBatch(port, relpBatch));
 
-        // Wait for the AMQP to flush all events to eventhub
+        // Wait for the AmqpClient to flush all events to eventhub
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 1000) {
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/1000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/1000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         while (receivedPayloads.size() != 0 && receivedPayloads.size() < 1000) {
@@ -334,7 +334,7 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -363,12 +363,12 @@ public class IntegrationDeferredTest {
             sendThreads.add(sendBatch(port, relpBatch));
             cursor += 1000;
         }
-        // Wait for the AMQP to flush all events to eventhub
+        // Wait for the AmqpClient to flush all events to eventhub
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/10000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/10000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         while (receivedPayloads.size() != 0 && receivedPayloads.size() < 10000) {
@@ -435,7 +435,7 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -464,12 +464,12 @@ public class IntegrationDeferredTest {
             sendThreads.add(sendBatch(port, relpBatch));
             cursor += 100;
         }
-        // Wait for the AMQP to flush all events to eventhub
+        // Wait for the AmqpClient to flush all events to eventhub
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/10000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/10000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         while (receivedPayloads.size() != 0 && receivedPayloads.size() < 10000) {
@@ -536,7 +536,7 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -565,12 +565,12 @@ public class IntegrationDeferredTest {
             sendThreads.add(sendBatch(port, relpBatch));
             cursor += 1000;
         }
-        // Wait for the AMQP to flush all events to eventhub
+        // Wait for the AmqpClient to flush all events to eventhub
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/100000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/100000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         while (receivedPayloads.size() != 0 && receivedPayloads.size() < 100000) {
@@ -637,7 +637,7 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -663,12 +663,12 @@ public class IntegrationDeferredTest {
         List<Thread> sendThreads = new LinkedList<>();
         sendThreads.add(sendBatch(port, relpBatch));
 
-        // Wait for the AMQP to flush all events to eventhub
+        // Wait for the AmqpClient to flush all events to eventhub
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/10000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/10000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         while (receivedPayloads.size() != 0 && receivedPayloads.size() < 10000) {
@@ -738,7 +738,7 @@ public class IntegrationDeferredTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
         Meter relpMeter = metricRegistry.meter("relpMeter");
-        final AMQP amqpClient = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
@@ -764,14 +764,14 @@ public class IntegrationDeferredTest {
         List<Thread> sendThreads = new LinkedList<>();
         sendThreads.add(sendBatch(port, relpBatch));
 
-        // Wait for the AMQP to flush all events to eventhub
+        // Wait for the AmqpClient to flush all events to eventhub
         LOGGER.info("relpBatch.verifyTransactionAll(): {}", relpBatch.verifyTransactionAll());
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
             LOGGER.info("Waiting for events to be processed by RELP... {}/100000", relpMeter.getCount());
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/100000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/100000", amqpMeter.getCount());
             LOGGER.info("relpBatch.verifyTransactionAll(): {}", relpBatch.verifyTransactionAll());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }

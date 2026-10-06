@@ -62,13 +62,13 @@ public class DeferredSyslog implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DeferredSyslog.class);
 
     private final BlockingQueue<FrameContext> frameContexts;
-    private final AMQP amqpClient;
+    private final AmqpClient amqpClient;
     private final Meter relpMeter;
 
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     public final AtomicBoolean run;
 
-    DeferredSyslog(BlockingQueue<FrameContext> frameContexts, AMQP amqpClient, Meter relpMeter) {
+    DeferredSyslog(BlockingQueue<FrameContext> frameContexts, AmqpClient amqpClient, Meter relpMeter) {
         this.frameContexts = frameContexts;
         this.amqpClient = amqpClient;
         this.relpMeter = relpMeter;

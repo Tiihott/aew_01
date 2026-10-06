@@ -65,14 +65,14 @@ public final class SinkServer implements AutoCloseable {
     private final MetricsConfig metricsConfig;
     private final RELP relp;
     private final DeferredSyslog deferredSyslog;
-    private final AMQP amqpClient;
+    private final AmqpClient amqpClient;
     Thread deferredProcessingThread;
 
     public SinkServer(
             MetricRegistry metricRegistry,
             RelpConfig relpConfig,
             MetricsConfig metricsConfig,
-            AMQP amqpClient
+            AmqpClient amqpClient
     ) {
         this.metricRegistry = metricRegistry;
         this.metricsConfig = metricsConfig;

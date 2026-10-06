@@ -55,15 +55,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public final class AMQP {
+public final class AmqpClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AMQP.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AmqpClient.class);
     private final Meter amqpMeter;
     private final EventHubProducerAsyncClient producerClient;
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     // Connection using connectionString
-    public AMQP(final String connectionString, final String eventHubName, Meter meter) {
+    public AmqpClient(final String connectionString, final String eventHubName, Meter meter) {
         this.amqpMeter = meter;
         LOGGER
                 .debug(
@@ -76,7 +76,7 @@ public final class AMQP {
     }
 
     // Connection using TokenCredential
-    public AMQP(
+    public AmqpClient(
             final TokenCredential credential,
             final String eventHubName,
             final String fullyQualifiedNamespace,

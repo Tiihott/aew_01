@@ -68,9 +68,9 @@ public class Main {
         final RelpConfig relpConfig = new RelpConfig(configSource);
         final AmqpConfig amqpConfig = new AmqpConfig(configSource);
         final MetricsConfig metricsConfig = new MetricsConfig(configSource);
-        final AMQP amqpClient;
+        final AmqpClient amqpClient;
         if (Objects.equals(amqpConfig.connectionType(), "connectionString")) {
-            amqpClient = new AMQP(
+            amqpClient = new AmqpClient(
                     amqpConfig.connectionString(),
                     amqpConfig.eventHubName(),
                     metricRegistry.meter("amqpMeter")
@@ -78,7 +78,7 @@ public class Main {
             LOGGER.info("amqpClient initialized using connection string");
         }
         else if (Objects.equals(amqpConfig.connectionType(), "passwordless")) {
-            amqpClient = new AMQP(
+            amqpClient = new AmqpClient(
                     new ManagedIdentityCredentialBuilder().clientId(amqpConfig.userManagedIdentityClientId()).build(),
                     amqpConfig.eventHubName(),
                     amqpConfig.namespaceName(),

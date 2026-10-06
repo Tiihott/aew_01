@@ -65,9 +65,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-final class AMQPTest {
+final class AmqpClientTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AMQPTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AmqpClientTest.class);
 
     static Network network;
     static AzuriteContainer azurite;
@@ -115,7 +115,7 @@ final class AMQPTest {
         final String connectionString = eventHubs.getConnectionString();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient client = new AmqpClient(connectionString, "eh1", amqpMeter);
         final List<EventData> allEvents = Arrays.asList(new EventData("Test message one"));
         for (EventData eventData : allEvents) {
             CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
@@ -123,7 +123,7 @@ final class AMQPTest {
             });
             client.addEvents(eventData);
         }
-        // Wait and .close() for the AMQP client to flush any remaining batches
+        // Wait and .close() for the AmqpClient client to flush any remaining batches
         Assertions.assertDoesNotThrow(() -> Thread.sleep(10 * 1000));
         Assertions.assertEquals(1, receivedPayloads.size());
         Assertions.assertTrue(receivedPayloads.contains("Test message one"));
@@ -155,7 +155,7 @@ final class AMQPTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient client = new AmqpClient(connectionString, "eh1", amqpMeter);
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
             CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
@@ -167,7 +167,7 @@ final class AMQPTest {
         }
 
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 1000) {
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/1000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/1000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
 
@@ -209,7 +209,7 @@ final class AMQPTest {
 
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = new AMQP(connectionString, "eh1", amqpMeter);
+        final AmqpClient client = new AmqpClient(connectionString, "eh1", amqpMeter);
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 100000; i++) {
             CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
@@ -221,7 +221,7 @@ final class AMQPTest {
         }
 
         while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
-            LOGGER.info("Waiting for events to be processed by AMQP... {}/100000", amqpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by AmqpClient... {}/100000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
 
@@ -246,7 +246,8 @@ final class AMQPTest {
         final TokenCredential credential = new ManagedIdentityCredentialBuilder().clientId("testClientId").build();
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter amqpMeter = metricRegistry.meter("amqpMeter");
-        final AMQP client = Assertions.assertDoesNotThrow(() -> new AMQP(credential, "eh1", "emulatorNs1", amqpMeter));
+        final AmqpClient client = Assertions
+                .assertDoesNotThrow(() -> new AmqpClient(credential, "eh1", "emulatorNs1", amqpMeter));
         // .publishEvents() is not supported by the EventHub Emulator when the client has been built using TokenCredential.
         client.close();
     }
