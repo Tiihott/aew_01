@@ -87,7 +87,7 @@ public class Main {
             LOGGER.info("amqpClient initialized using passwordless connection");
         }
         else {
-            throw new IllegalStateException("Unsupported connection type");
+            throw new IllegalArgumentException("Unsupported connection type");
         }
         try (final SinkServer server = new SinkServer(metricRegistry, relpConfig, metricsConfig, amqpClient)) {
             server.start();
@@ -107,8 +107,8 @@ public class Main {
                 }
         }
         catch (Exception e) {
-            LOGGER.error("Error starting server", e);
-            throw new RuntimeException(e);
+            LOGGER.error("Error starting SinkServer", e);
+            throw new RuntimeException("Error occurred when initializing SinkServer", e);
         }
     }
 }
