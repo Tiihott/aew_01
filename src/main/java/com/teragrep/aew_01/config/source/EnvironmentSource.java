@@ -60,12 +60,14 @@ public final class EnvironmentSource implements Sourceable {
     public String source(String name) {
         final String variable = name.toUpperCase().replace(".", "_");
         LOGGER.debug("sourcing name <[{}]> as environment variable <[{}]>", name, variable);
-        final String rv = envValues.get(variable);
-        if (rv == null) {
+        if (envValues.containsKey(variable)) {
+            final String rv = envValues.get(variable);
+            LOGGER.debug("sourced value <[{}]> for variable <[{}]>", rv, variable);
+            return rv;
+        }
+        else {
             throw new IllegalStateException("environment variable <[" + variable + "]> was not defined");
         }
-        LOGGER.debug("sourced value <[{}]> for variable <[{}]>", rv, variable);
-        return rv;
     }
 
     @Override
