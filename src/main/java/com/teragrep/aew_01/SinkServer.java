@@ -50,11 +50,9 @@ import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.jmx.JmxReporter;
 import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
-import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public final class SinkServer implements AutoCloseable {
@@ -66,34 +64,47 @@ public final class SinkServer implements AutoCloseable {
     private final RELP relp;
     private final DeferredSyslog deferredSyslog;
     private final AmqpClient amqpClient;
-    Thread deferredProcessingThread;
+    private final Thread deferredProcessingThread;
 
     public SinkServer(
             MetricRegistry metricRegistry,
             RelpConfig relpConfig,
             MetricsConfig metricsConfig,
-            AmqpClient amqpClient
+            AmqpClient amqpClient,
+            RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder
+    ) {
+        this(
+                metricRegistry,
+                metricsConfig,
+                amqpClient,
+                new RELP(
+                        relpConfig.tls(),
+                        relpConfig.port(),
+                        relpConfig.tlsTruststorePassword(),
+                        relpConfig.tlsKeystorePassword(),
+                        relpConfig.processingThreads(),
+                        relpCommandConsumerMapBuilder.relpCommandConsumerMap()
+                ),
+                new DeferredSyslog(
+                        relpCommandConsumerMapBuilder.frameContexts(),
+                        amqpClient,
+                        metricRegistry.meter("relpMeter")
+                ));
+    }
+
+    public SinkServer(
+            MetricRegistry metricRegistry,
+            MetricsConfig metricsConfig,
+            AmqpClient amqpClient,
+            RELP relp,
+            DeferredSyslog deferredSyslog
     ) {
         this.metricRegistry = metricRegistry;
         this.metricsConfig = metricsConfig;
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(
-                relpConfig.frameContextsCapacity()
-        ).build();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        this.relp = new RELP(
-                relpConfig.tls(),
-                relpConfig.port(),
-                relpConfig.tlsTruststorePassword(),
-                relpConfig.tlsKeystorePassword(),
-                relpConfig.processingThreads(),
-                relpCommandConsumerMap
-        );
         this.amqpClient = amqpClient;
-        deferredSyslog = new DeferredSyslog(
-                relpCommandConsumerMapBuilder.frameContexts(),
-                amqpClient,
-                metricRegistry.meter("relpMeter")
-        );
+        this.relp = relp;
+        this.deferredSyslog = deferredSyslog;
+        this.deferredProcessingThread = new Thread(deferredSyslog);
     }
 
     public void start() {
@@ -115,7 +126,6 @@ public final class SinkServer implements AutoCloseable {
         /*
          * Start deferred processing before running the RELP server, otherwise our client will wait forever for a response
          */
-        deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
 
         Thread relpThread = new Thread(relp);
