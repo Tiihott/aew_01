@@ -78,9 +78,8 @@ public final class SinkServer implements AutoCloseable {
         this.metricsConfig = metricsConfig;
         final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(
                 relpConfig.frameContextsCapacity()
-        );
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder
-                .buildRelpCommandConsumerMap();
+        ).build();
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
         this.relp = new RELP(
                 relpConfig.tls(),
                 relpConfig.port(),
