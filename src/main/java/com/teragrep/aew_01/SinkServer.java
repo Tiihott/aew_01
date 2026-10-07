@@ -119,7 +119,8 @@ public final class SinkServer implements AutoCloseable {
         final int prometheusPort = metricsConfig.prometheusPort();
         final org.eclipse.jetty.server.Server jettyServer = new org.eclipse.jetty.server.Server(prometheusPort);
         try {
-            Metrics.startMetrics(jmxReporter, slf4jReporter, metricRegistry, jettyServer);
+            Metrics metrics = new Metrics(jmxReporter, slf4jReporter, metricRegistry, jettyServer);
+            metrics.startMetrics();
         }
         catch (Exception e) {
             throw new RuntimeException(e);

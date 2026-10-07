@@ -59,16 +59,23 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
-public class Metrics {
+public final class Metrics {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Metrics.class);
 
-    static void startMetrics(
-            JmxReporter jmxReporter,
-            Slf4jReporter slf4jReporter,
-            MetricRegistry metricRegistry,
-            Server jettyServer
-    ) throws Exception {
+    private final JmxReporter jmxReporter;
+    private final Slf4jReporter slf4jReporter;
+    private final MetricRegistry metricRegistry;
+    private final Server jettyServer;
+
+    Metrics(JmxReporter jmxReporter, Slf4jReporter slf4jReporter, MetricRegistry metricRegistry, Server jettyServer) {
+        this.jmxReporter = jmxReporter;
+        this.slf4jReporter = slf4jReporter;
+        this.metricRegistry = metricRegistry;
+        this.jettyServer = jettyServer;
+    }
+
+    void startMetrics() throws Exception {
         LOGGER.info("Starting metrics for RELP sink for Microsoft Azure EventHub...");
         jmxReporter.start();
         slf4jReporter.start(1, TimeUnit.MINUTES);
