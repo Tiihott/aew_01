@@ -74,9 +74,9 @@ public class IntegrationDeferredTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IntegrationDeferredTest.class);
 
-    static Network network;
-    static AzuriteContainer azurite;
-    static EventHubsEmulatorContainer eventHubs;
+    private Network network;
+    private AzuriteContainer azurite;
+    private EventHubsEmulatorContainer eventHubs;
 
     @BeforeEach
     void setUp() {

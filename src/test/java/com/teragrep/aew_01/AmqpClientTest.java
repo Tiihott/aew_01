@@ -69,9 +69,9 @@ final class AmqpClientTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AmqpClientTest.class);
 
-    static Network network;
-    static AzuriteContainer azurite;
-    static EventHubsEmulatorContainer eventHubs;
+    private Network network;
+    private AzuriteContainer azurite;
+    private EventHubsEmulatorContainer eventHubs;
 
     @BeforeEach
     void setUp() {
