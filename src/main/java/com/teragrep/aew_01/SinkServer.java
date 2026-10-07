@@ -89,7 +89,8 @@ public final class SinkServer implements AutoCloseable {
                         relpCommandConsumerMapBuilder.frameContexts(),
                         amqpClient,
                         metricRegistry.meter("relpMeter")
-                ));
+                )
+        );
     }
 
     public SinkServer(
