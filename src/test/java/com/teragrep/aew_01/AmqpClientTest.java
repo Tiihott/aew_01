@@ -63,7 +63,6 @@ import org.testcontainers.utility.MountableFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 final class AmqpClientTest {
 
@@ -118,9 +117,6 @@ final class AmqpClientTest {
         final AmqpClient client = new AmqpClient(connectionString, "eh1", amqpMeter);
         final List<EventData> allEvents = Arrays.asList(new EventData("Test message one"));
         for (EventData eventData : allEvents) {
-            CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
-                return true;
-            });
             client.addEvents(eventData);
         }
         // Wait and .close() for the AmqpClient client to flush any remaining batches
@@ -158,9 +154,6 @@ final class AmqpClientTest {
         final AmqpClient client = new AmqpClient(connectionString, "eh1", amqpMeter);
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 1000; i++) {
-            CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
-                return true;
-            });
             final EventData eventData = new EventData("Test message " + i);
             client.addEvents(eventData);
             expectedEvents.add(eventData);
@@ -212,9 +205,6 @@ final class AmqpClientTest {
         final AmqpClient client = new AmqpClient(connectionString, "eh1", amqpMeter);
         final List<EventData> expectedEvents = new ArrayList<>();
         for (int i = 1; i <= 100000; i++) {
-            CompletableFuture<Boolean> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
-                return true;
-            });
             final EventData eventData = new EventData("Test message " + i);
             client.addEvents(eventData);
             expectedEvents.add(eventData);
