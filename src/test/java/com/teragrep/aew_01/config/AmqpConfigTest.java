@@ -116,9 +116,7 @@ class AmqpConfigTest {
     void missingEnvironmentVariablesException() {
         final String type = System.getProperty("config.source", "environment");
         final Sourceable configSource;
-        if (!"environment".equals(type)) {
-            Assertions.fail("config.source not within supported types: [environment]");
-        }
+        Assertions.assertEquals("environment", type);
         configSource = new EnvironmentSource();
         Assertions.assertThrows(IllegalStateException.class, () -> new AmqpConfig(configSource));
     }
