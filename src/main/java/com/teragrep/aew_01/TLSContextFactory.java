@@ -53,18 +53,18 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 
-public class TLSContextFactory {
+public final class TLSContextFactory {
 
-    public static SSLContext authenticatedContext(InputStream keyStoreStream, String keystorePassword, String protocol)
+    public SSLContext authenticatedContext(InputStream keyStoreStream, String keystorePassword, String protocol)
             throws GeneralSecurityException, IOException {
 
-        SSLContext sslContext = SSLContext.getInstance(protocol);
-        KeyStore ks = KeyStore.getInstance("JKS");
+        final SSLContext sslContext = SSLContext.getInstance(protocol);
+        final KeyStore ks = KeyStore.getInstance("JKS");
 
         ks.load(keyStoreStream, keystorePassword.toCharArray());
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tmf.init(ks);
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        final KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(ks, keystorePassword.toCharArray());
         sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 

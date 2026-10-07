@@ -216,7 +216,7 @@ public final class RELP implements Runnable, AutoCloseable {
 
         SSLContext sslContext;
         try {
-            sslContext = TLSContextFactory.authenticatedContext(keystoreStream, tlsKeystorePassword, "TLSv1.3");
+            sslContext = new TLSContextFactory().authenticatedContext(keystoreStream, tlsKeystorePassword, "TLSv1.3");
         }
         catch (GeneralSecurityException e) {
             throw new RuntimeException("Can't create sslContext: " + e);
