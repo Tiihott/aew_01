@@ -85,7 +85,6 @@ public final class RELP implements Runnable, AutoCloseable {
     private final Thread eventLoopThread;
 
     private final Supplier<FrameDelegate> frameDelegateSupplier;
-    private final EventLoopFactory eventLoopFactory = new EventLoopFactory();
 
     final String tls;
     final String port;
@@ -98,7 +97,7 @@ public final class RELP implements Runnable, AutoCloseable {
             final String tlsKeystore,
             final String tlsKeystorePassword,
             final int processingThreads,
-            Consumer<FrameContext> syslogConsumer
+            final Consumer<FrameContext> syslogConsumer
     ) {
         this.executorService = Executors.newFixedThreadPool(processingThreads);
         this.tls = tls;
@@ -110,7 +109,7 @@ public final class RELP implements Runnable, AutoCloseable {
             return new DefaultFrameDelegate(syslogConsumer);
         };
         try {
-            eventLoop = eventLoopFactory.create();
+            eventLoop = new EventLoopFactory().create();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -124,7 +123,7 @@ public final class RELP implements Runnable, AutoCloseable {
             final String tlsKeystore,
             final String tlsKeystorePassword,
             final int processingThreads,
-            Map<String, RelpEvent> relpCommandConsumerMap
+            final Map<String, RelpEvent> relpCommandConsumerMap
     ) {
         this.executorService = Executors.newFixedThreadPool(processingThreads);
         this.tls = tls;
@@ -136,7 +135,7 @@ public final class RELP implements Runnable, AutoCloseable {
             return new DefaultFrameDelegate(relpCommandConsumerMap);
         };
         try {
-            eventLoop = eventLoopFactory.create();
+            eventLoop = new EventLoopFactory().create();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
