@@ -89,11 +89,11 @@ class SinkServerTest {
                 .acceptLicense()
                 .withNetwork(network)
                 .withAzuriteContainer(azurite);
-        LOGGER.info("eventHubs.getExposedPorts(): {}", eventHubs.getExposedPorts());
-        LOGGER.info("azurite.getExposedPorts(): {}", azurite.getExposedPorts());
+        LOGGER.info("eventHubs.getExposedPorts(): <{}>", eventHubs.getExposedPorts());
+        LOGGER.info("azurite.getExposedPorts(): <{}>", azurite.getExposedPorts());
         azurite.getExposedPorts();
         eventHubs.start();
-        LOGGER.info("eventHubs.getFirstMappedPort(): {}", eventHubs.getFirstMappedPort());
+        LOGGER.info("eventHubs.getFirstMappedPort(): <{}>", eventHubs.getFirstMappedPort());
     }
 
     @AfterEach
@@ -123,7 +123,7 @@ class SinkServerTest {
 
         final MetricRegistry metricRegistry = new MetricRegistry();
         final String connectionString = eventHubs.getConnectionString();
-        LOGGER.info("Connecting to AWS EventHubs at {}", connectionString);
+        LOGGER.info("Connecting to AWS EventHubs at <{}>", connectionString);
         RelpConfig relpConfig = new RelpConfig("1601", "false", "changeit", "changeit", "1", "10024");
         AmqpConfig amqpConfig = new AmqpConfig(
                 "eh1",
@@ -163,7 +163,7 @@ class SinkServerTest {
         List<Thread> sendThreads = new LinkedList<>();
         sendThreads.add(sendBatch(1601, relpBatch));
         // Wait for all sendBatch operations to finish
-        LOGGER.info("relpBatch.verifyTransactionAll(): {}", relpBatch.verifyTransactionAll());
+        LOGGER.info("relpBatch.verifyTransactionAll(): <{}>", relpBatch.verifyTransactionAll());
         for (Thread sendThread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> sendThread.join());
         }
@@ -171,10 +171,10 @@ class SinkServerTest {
         while (receivedPayloads.size() < 1000) {
             LOGGER
                     .info(
-                            "Waiting for async consumer client to receive the events for assertions... {}/1000",
+                            "Waiting for async consumer client to receive the events for assertions... <{}>/1000",
                             receivedPayloads.size()
                     );
-            LOGGER.info("relpBatch.verifyTransactionAll(): {}", relpBatch.verifyTransactionAll());
+            LOGGER.info("relpBatch.verifyTransactionAll(): <{}>", relpBatch.verifyTransactionAll());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
         consumer.close();
@@ -220,7 +220,7 @@ class SinkServerTest {
                     relpBatch.retryAllFailed(); // re-queue failed events
                     LOGGER
                             .error(
-                                    "Failed to verify RELP batch transaction, retrying sending the {} failed messages",
+                                    "Failed to verify RELP batch transaction, retrying sending the <{}> failed messages",
                                     relpBatch.getWorkQueueLength()
                             );
                     relpConnection.tearDown(); // teardown connection

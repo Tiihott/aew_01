@@ -106,7 +106,7 @@ public final class AmqpClient {
             return producerClient.send(batch);
         }).toFuture().whenCompleteAsync((Void, throwable) -> {
             if (throwable != null) {
-                LOGGER.error("Error occurred publishing event: {}", throwable.getMessage());
+                LOGGER.error("Error occurred publishing event: <{}>", throwable.getMessage());
             }
             else {
                 amqpMeter.mark();
