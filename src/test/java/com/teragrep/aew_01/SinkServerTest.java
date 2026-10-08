@@ -179,10 +179,14 @@ class SinkServerTest {
         }
         consumer.close();
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = expectedPayloads.size();
+        long count = 0;
         for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
         LOGGER.info("Closing the sink server");
         Assertions.assertDoesNotThrow(sinkServer::close);
         Assertions.assertDoesNotThrow(() -> thread.join());

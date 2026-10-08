@@ -195,10 +195,14 @@ public class IntegrationDeferredTest {
         Assertions.assertEquals(expectedPayloads.size(), receivedPayloads.size());
         Assertions.assertEquals(2, amqpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = 2;
+        long count = 0;
         for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
     }
 
     @Test
@@ -297,10 +301,14 @@ public class IntegrationDeferredTest {
         Assertions.assertTrue(1000 <= amqpMeter.getCount());
         Assertions.assertTrue(1000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = 1000;
+        long count = 0;
         for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
     }
 
     @Test
@@ -398,10 +406,14 @@ public class IntegrationDeferredTest {
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
-        for (final String expectedPayload : expectedPayloads) {
+        final long expectedCount = 10000;
+        long count = 0;
+        for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
     }
 
     @Test
@@ -499,10 +511,14 @@ public class IntegrationDeferredTest {
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = 10000;
+        long count = 0;
         for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
     }
 
     @Test
@@ -600,10 +616,14 @@ public class IntegrationDeferredTest {
         Assertions.assertTrue(100000 <= amqpMeter.getCount());
         Assertions.assertTrue(100000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = 100000;
+        long count = 0;
         for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
     }
 
     @Test
@@ -702,10 +722,14 @@ public class IntegrationDeferredTest {
         Assertions.assertTrue(10000 <= amqpMeter.getCount());
         Assertions.assertTrue(10000 <= relpMeter.getCount());
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = 10000;
+        long count = 0;
         for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
     }
 
     @Test
@@ -808,10 +832,14 @@ public class IntegrationDeferredTest {
         }
 
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = 100000;
+        long count = 0;
         for (String expectedPayload : expectedPayloads) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedPayload), "Message was not received by Eventhub: " + expectedPayload);
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
     }
 
     private Thread sendBatch(int port, RelpBatch relpBatch) {

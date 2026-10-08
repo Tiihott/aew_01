@@ -171,10 +171,14 @@ final class AmqpClientTest {
         Assertions.assertEquals(1000, expectedEvents.size());
         Assertions.assertEquals(1000, receivedPayloads.size());
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = 1000;
+        long count = 0;
         for (EventData expectedEvent : expectedEvents) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedEvent.getBodyAsString()), "Message was not received by Eventhub: " + expectedEvent.getBodyAsString());
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
         client.close();
         consumer.close();
     }
@@ -223,10 +227,14 @@ final class AmqpClientTest {
         // Throttling of EventHub Emulator produces duplicate messages in EventHub.
         Assertions.assertTrue(receivedPayloads.size() >= 100000);
         // Assert that all the expected payloads are present in eventhub results
+        final long expectedCount = 100000;
+        long count = 0;
         for (EventData expectedEvent : expectedEvents) {
             Assertions
                     .assertTrue(receivedPayloads.contains(expectedEvent.getBodyAsString()), "Message was not received by Eventhub: " + expectedEvent.getBodyAsString());
+            count++;
         }
+        Assertions.assertEquals(expectedCount, count);
         client.close();
         consumer.close();
     }
