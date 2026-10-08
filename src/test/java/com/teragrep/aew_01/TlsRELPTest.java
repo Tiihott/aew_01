@@ -110,43 +110,43 @@ public class TlsRELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP(
-                "true",
-                "2601",
-                "src/test/resources/keystore-server.jks",
-                "changeit",
-                1,
-                frameContext -> {
-                    LOGGER.info(frameContext.relpFrame().payload().toString());
-                    relpMeter.mark();
-                }
-        );
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
-        // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-
-        // send message to the RELP server.
-        SSLContext sslContext = Assertions
-                .assertDoesNotThrow(
-                        () -> InternalSSLContextFactory
-                                .authenticatedContext(
-                                        "src/test/resources/keystore-client.jks", "src/test/resources/truststore.jks",
-                                        "changeit", "changeit", "TLSv1.3"
-                                )
-                );
-        Supplier<SSLEngine> sslEngineSupplier = sslContext::createSSLEngine;
-        final RelpConnection relpConnection = new RelpConnection(sslEngineSupplier);
-        final int port = 2601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
-        final RelpBatch relpBatch = new RelpBatch();
-        long reqId = relpBatch.insert("Hello World!".getBytes(StandardCharsets.UTF_8));
-        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        // verify successful transaction
-        Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
-        Assertions.assertAll(relpConnection::disconnect);
-        Assertions.assertEquals(1, relpMeter.getCount());
-        relp.close();
+        // Use try-with-resources to make sure relp is autoclosed between each test
+        try (
+                final RELP relp = new RELP(
+                        "true",
+                        "2601",
+                        "src/test/resources/keystore-server.jks",
+                        "changeit",
+                        1,
+                        frameContext -> {
+                            LOGGER.info(frameContext.relpFrame().payload().toString());
+                            relpMeter.mark();
+                        }
+                )
+        ) {
+            Thread relpThread = new Thread(relp);
+            relpThread.start();
+            // send message to the RELP server.
+            SSLContext sslContext = Assertions
+                    .assertDoesNotThrow(
+                            () -> InternalSSLContextFactory
+                                    .authenticatedContext(
+                                            "src/test/resources/keystore-client.jks",
+                                            "src/test/resources/truststore.jks", "changeit", "changeit", "TLSv1.3"
+                                    )
+                    );
+            Supplier<SSLEngine> sslEngineSupplier = sslContext::createSSLEngine;
+            final RelpConnection relpConnection = new RelpConnection(sslEngineSupplier);
+            final int port = 2601;
+            Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+            final RelpBatch relpBatch = new RelpBatch();
+            long reqId = relpBatch.insert("Hello World!".getBytes(StandardCharsets.UTF_8));
+            Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+            // verify successful transaction
+            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+            Assertions.assertAll(relpConnection::disconnect);
+            Assertions.assertEquals(1, relpMeter.getCount());
+        }
     }
 
     @Test
@@ -154,26 +154,27 @@ public class TlsRELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP(
-                "true",
-                "2601",
-                "src/test/resources/keystore-server.jks",
-                "changeit",
-                1,
-                frameContext -> {
-                    LOGGER.info(frameContext.relpFrame().payload().toString());
-                    relpMeter.mark();
-                }
-        );
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
-        // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // Try connecting to the RELP server using plain RelpConnection
-        final RelpConnection relpConnection = new RelpConnection();
-        final int port = 2601;
-        Assertions.assertThrows(IOException.class, () -> relpConnection.connect("localhost", port));
-        relp.close();
+        // Use try-with-resources to make sure relp is autoclosed between each test
+        try (
+                final RELP relp = new RELP(
+                        "true",
+                        "2601",
+                        "src/test/resources/keystore-server.jks",
+                        "changeit",
+                        1,
+                        frameContext -> {
+                            LOGGER.info(frameContext.relpFrame().payload().toString());
+                            relpMeter.mark();
+                        }
+                )
+        ) {
+            Thread relpThread = new Thread(relp);
+            relpThread.start();
+            // Try connecting to the RELP server using plain RelpConnection
+            final RelpConnection relpConnection = new RelpConnection();
+            final int port = 2601;
+            Assertions.assertThrows(IOException.class, () -> relpConnection.connect("localhost", port));
+        }
     }
 
 }

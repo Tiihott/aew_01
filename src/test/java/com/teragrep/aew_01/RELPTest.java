@@ -68,26 +68,27 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
+        // Use try-with-resources to make sure relp is autoclosed between each test
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
             LOGGER.info(frameContext.relpFrame().payload().toString());
             relpMeter.mark();
-        });
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
-        // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send message to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
-        final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
-        final RelpBatch relpBatch = new RelpBatch();
-        long reqId = relpBatch.insert("Hello World!".getBytes(StandardCharsets.UTF_8));
-        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        // verify successful transaction
-        Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
-        Assertions.assertAll(relpConnection::disconnect);
-        Assertions.assertEquals(1, relpMeter.getCount());
-        relp.close();
+        })) {
+            Thread relpThread = new Thread(relp);
+            relpThread.start();
+            // Wait for the server to start
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(5));
+            // send message to the RELP server.
+            final RelpConnection relpConnection = new RelpConnection();
+            final int port = 1601;
+            Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+            final RelpBatch relpBatch = new RelpBatch();
+            long reqId = relpBatch.insert("Hello World!".getBytes(StandardCharsets.UTF_8));
+            Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+            // verify successful transaction
+            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+            Assertions.assertAll(relpConnection::disconnect);
+            Assertions.assertEquals(1, relpMeter.getCount());
+        }
     }
 
     @Test
@@ -95,32 +96,33 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
+        // Use try-with-resources to make sure relp is autoclosed between each test
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
             LOGGER.info(frameContext.relpFrame().payload().toString());
             relpMeter.mark();
-        });
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
-        // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send message to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
-        final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
-        final RelpBatch relpBatch = new RelpBatch();
-        List<Long> reqIds = new ArrayList<>();
-        for (int i = 1; i <= 10000; i++) {
-            String payload = "Hello World " + i;
-            reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+        })) {
+            Thread relpThread = new Thread(relp);
+            relpThread.start();
+            // Wait for the server to start
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(5));
+            // send message to the RELP server.
+            final RelpConnection relpConnection = new RelpConnection();
+            final int port = 1601;
+            Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+            final RelpBatch relpBatch = new RelpBatch();
+            List<Long> reqIds = new ArrayList<>();
+            for (int i = 1; i <= 10000; i++) {
+                String payload = "Hello World " + i;
+                reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+            }
+            Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+            // verify successful transaction
+            for (Long reqId : reqIds) {
+                Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+            }
+            Assertions.assertAll(relpConnection::disconnect);
+            Assertions.assertEquals(10000, relpMeter.getCount());
         }
-        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        // verify successful transaction
-        for (Long reqId : reqIds) {
-            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
-        }
-        Assertions.assertAll(relpConnection::disconnect);
-        Assertions.assertEquals(10000, relpMeter.getCount());
-        relp.close();
     }
 
     @Test
@@ -128,32 +130,33 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
+        // Use try-with-resources to make sure relp is autoclosed between each test
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
             LOGGER.info(frameContext.relpFrame().payload().toString());
             relpMeter.mark();
-        });
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
-        // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send message to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
-        final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
-        final RelpBatch relpBatch = new RelpBatch();
-        List<Long> reqIds = new ArrayList<>();
-        for (int i = 1; i <= 100000; i++) {
-            String payload = "Hello World " + i;
-            reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+        })) {
+            Thread relpThread = new Thread(relp);
+            relpThread.start();
+            // Wait for the server to start
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(5));
+            // send message to the RELP server.
+            final RelpConnection relpConnection = new RelpConnection();
+            final int port = 1601;
+            Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+            final RelpBatch relpBatch = new RelpBatch();
+            List<Long> reqIds = new ArrayList<>();
+            for (int i = 1; i <= 100000; i++) {
+                String payload = "Hello World " + i;
+                reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
+            }
+            Assertions.assertAll(() -> relpConnection.commit(relpBatch));
+            // verify successful transaction
+            for (Long reqId : reqIds) {
+                Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
+            }
+            Assertions.assertAll(relpConnection::disconnect);
+            Assertions.assertEquals(100000, relpMeter.getCount());
         }
-        Assertions.assertAll(() -> relpConnection.commit(relpBatch));
-        // verify successful transaction
-        for (Long reqId : reqIds) {
-            Assertions.assertTrue(relpBatch.verifyTransaction(reqId));
-        }
-        Assertions.assertAll(relpConnection::disconnect);
-        Assertions.assertEquals(100000, relpMeter.getCount());
-        relp.close();
     }
 
     @Test
@@ -161,26 +164,27 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
+        // Use try-with-resources to make sure relp is autoclosed between each test
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
             // Sleep for 2 seconds to trigger RELP client timeout exception, emulating EventHub throttling.
             Assertions.assertDoesNotThrow(() -> Thread.sleep(2000));
             LOGGER.info(frameContext.relpFrame().payload().toString());
             relpMeter.mark();
-        });
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
-        // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
-        // send message to the RELP server.
-        final RelpConnection relpConnection = new RelpConnection();
-        relpConnection.setConnectionTimeout(1000);
-        relpConnection.setWriteTimeout(1000);
-        relpConnection.setReadTimeout(1000);
-        final int port = 1601;
-        Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
-        final RelpBatch relpBatch = new RelpBatch();
-        long reqId = relpBatch.insert("Hello World!".getBytes(StandardCharsets.UTF_8));
-        Assertions.assertThrows(TimeoutException.class, () -> relpConnection.commit(relpBatch));
-        relp.close();
+        })) {
+            Thread relpThread = new Thread(relp);
+            relpThread.start();
+            // Wait for the server to start
+            Assertions.assertDoesNotThrow(() -> Thread.sleep(5));
+            // send message to the RELP server.
+            final RelpConnection relpConnection = new RelpConnection();
+            relpConnection.setConnectionTimeout(1000);
+            relpConnection.setWriteTimeout(1000);
+            relpConnection.setReadTimeout(1000);
+            final int port = 1601;
+            Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
+            final RelpBatch relpBatch = new RelpBatch();
+            relpBatch.insert("Hello World!".getBytes(StandardCharsets.UTF_8));
+            Assertions.assertThrows(TimeoutException.class, () -> relpConnection.commit(relpBatch));
+        }
     }
 }
