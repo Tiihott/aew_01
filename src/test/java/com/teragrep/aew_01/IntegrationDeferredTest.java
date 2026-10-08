@@ -146,12 +146,11 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
         // send 2 messages to the RELP server in a single batch.
         final int port = 1601;
-        int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
         List<Thread> sendThreads = new LinkedList<>();
         final RelpBatch relpBatch = new RelpBatch();
         final List<Long> reqIds = new ArrayList<>();
-        for (int i = cursor; i < cursor + 2; i++) {
+        for (int i = 1; i <= 2; i++) {
             String payload = "Hello World" + i;
             reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
             expectedPayloads.add(payload);
@@ -246,12 +245,11 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
         // send batch of 1000 messages to the RELP server.
         final int port = 1601;
-        int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
         List<Thread> sendThreads = new LinkedList<>();
         final RelpBatch relpBatch = new RelpBatch();
         final List<Long> reqIds = new ArrayList<>();
-        for (int i = cursor; i < cursor + 1000; i++) {
+        for (int i = 1; i <= 1000; i++) {
             String payload = "Hello World" + i;
             reqIds.add(relpBatch.insert(payload.getBytes(StandardCharsets.UTF_8)));
             expectedPayloads.add(payload);
