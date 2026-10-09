@@ -143,7 +143,7 @@ public class IntegrationDeferredTest {
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        relp.startCompletableFuture().join();
         // send 2 messages to the RELP server in a single batch.
         final int port = 1601;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -246,7 +246,7 @@ public class IntegrationDeferredTest {
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        relp.startCompletableFuture().join();
         // send batch of 1000 messages to the RELP server.
         final int port = 1601;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -352,7 +352,7 @@ public class IntegrationDeferredTest {
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        relp.startCompletableFuture().join();
         // send 10 batches of 1000 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -457,7 +457,7 @@ public class IntegrationDeferredTest {
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        relp.startCompletableFuture().join();
         // send 100 batches of 100 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -562,7 +562,7 @@ public class IntegrationDeferredTest {
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        relp.startCompletableFuture().join();
         // send 100 batches of 100 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -667,7 +667,7 @@ public class IntegrationDeferredTest {
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        relp.startCompletableFuture().join();
         // send batch of 10000 messages to the RELP server.
         final int port = 1601;
         final RelpBatch relpBatch = new RelpBatch();
@@ -772,7 +772,7 @@ public class IntegrationDeferredTest {
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         // Wait for the server to start
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+        relp.startCompletableFuture().join();
         // send batch of 100000 messages to the RELP server.
         final int port = 1601;
         final RelpBatch relpBatch = new RelpBatch();

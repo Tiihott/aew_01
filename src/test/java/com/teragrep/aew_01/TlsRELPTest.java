@@ -127,7 +127,7 @@ public class TlsRELPTest {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start
-            Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+            relp.startCompletableFuture().join();
             // send message to the RELP server.
             SSLContext sslContext = Assertions
                     .assertDoesNotThrow(
@@ -173,7 +173,7 @@ public class TlsRELPTest {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start
-            Assertions.assertDoesNotThrow(() -> Thread.sleep(5 * 1000));
+            relp.startCompletableFuture().join();
             // Try connecting to the RELP server using plain RelpConnection
             final RelpConnection relpConnection = new RelpConnection();
             final int port = 2601;
