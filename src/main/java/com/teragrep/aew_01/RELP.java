@@ -69,6 +69,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -83,13 +84,14 @@ public final class RELP implements Runnable, AutoCloseable {
     private final ExecutorService executorService;
     private final EventLoop eventLoop;
     private final Thread eventLoopThread;
+    private final CompletableFuture<String> startCompletableFuture;
 
     private final Supplier<FrameDelegate> frameDelegateSupplier;
 
-    final String tls;
-    final String port;
-    final String tlsKeystore;
-    final String tlsKeystorePassword;
+    private final String tls;
+    private final String port;
+    private final String tlsKeystore;
+    private final String tlsKeystorePassword;
 
     public RELP(
             final String tls,
@@ -115,6 +117,7 @@ public final class RELP implements Runnable, AutoCloseable {
             throw new RuntimeException(e);
         }
         eventLoopThread = new Thread(eventLoop);
+        startCompletableFuture = new CompletableFuture<>();
     }
 
     public RELP(
@@ -141,6 +144,7 @@ public final class RELP implements Runnable, AutoCloseable {
             throw new RuntimeException(e);
         }
         eventLoopThread = new Thread(eventLoop);
+        startCompletableFuture = new CompletableFuture<>();
     }
 
     @Override
@@ -167,6 +171,8 @@ public final class RELP implements Runnable, AutoCloseable {
 
         try {
             serverFactory.create(Integer.parseInt(port));
+            // Complete the future to notify all other running threads that server is ready.
+            startCompletableFuture.complete("Server started");
         }
         catch (IOException e) {
             LOGGER.error("Failed to run: <[{}]>", e.getMessage(), e);
@@ -232,6 +238,10 @@ public final class RELP implements Runnable, AutoCloseable {
         };
 
         return new TLSFactory(sslContext, sslEngineFunction);
+    }
+
+    public CompletableFuture<String> startCompletableFuture() {
+        return startCompletableFuture;
     }
 
     @Override
