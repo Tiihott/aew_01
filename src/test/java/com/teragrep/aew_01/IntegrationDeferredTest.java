@@ -133,17 +133,18 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
         DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
+        deferredSyslog.startCompletableFuture().join();
         // send 2 messages to the RELP server in a single batch.
         final int port = 1601;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -236,17 +237,18 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
         DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
+        deferredSyslog.startCompletableFuture().join();
         // send batch of 1000 messages to the RELP server.
         final int port = 1601;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -342,17 +344,18 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
         DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
+        deferredSyslog.startCompletableFuture().join();
         // send 10 batches of 1000 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -447,17 +450,18 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
         DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
+        deferredSyslog.startCompletableFuture().join();
         // send 100 batches of 100 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -552,17 +556,18 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
         DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
+        deferredSyslog.startCompletableFuture().join();
         // send 100 batches of 100 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -657,17 +662,18 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
         DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
+        deferredSyslog.startCompletableFuture().join();
         // send batch of 10000 messages to the RELP server.
         final int port = 1601;
         final RelpBatch relpBatch = new RelpBatch();
@@ -762,17 +768,18 @@ public class IntegrationDeferredTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
         final AmqpClient amqpClient = new AmqpClient(connectionString, "eh1", amqpMeter);
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
-        relpThread.start();
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
         DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
+        Thread relpThread = new Thread(relp);
+        relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
+        deferredSyslog.startCompletableFuture().join();
         // send batch of 100000 messages to the RELP server.
         final int port = 1601;
         final RelpBatch relpBatch = new RelpBatch();

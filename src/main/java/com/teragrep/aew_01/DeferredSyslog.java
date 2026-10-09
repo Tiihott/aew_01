@@ -64,6 +64,7 @@ public class DeferredSyslog implements Runnable {
     private final BlockingQueue<FrameContext> frameContexts;
     private final AmqpClient amqpClient;
     private final Meter relpMeter;
+    private final CompletableFuture<String> startCompletableFuture;
 
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     public final AtomicBoolean run;
@@ -72,6 +73,7 @@ public class DeferredSyslog implements Runnable {
         this.frameContexts = frameContexts;
         this.amqpClient = amqpClient;
         this.relpMeter = relpMeter;
+        this.startCompletableFuture = new CompletableFuture<>();
 
         this.run = new AtomicBoolean(true);
     }
@@ -82,6 +84,7 @@ public class DeferredSyslog implements Runnable {
             try {
                 // this will read at least one
                 FrameContext frameContext = frameContexts.poll(1, TimeUnit.SECONDS);
+                startCompletableFuture.complete("Deferred handling started");
 
                 if (frameContext == null) {
                     // no frame yet
@@ -120,6 +123,10 @@ public class DeferredSyslog implements Runnable {
                 // ignored
             }
         }
-
     }
+
+    public CompletableFuture<String> startCompletableFuture() {
+        return startCompletableFuture;
+    }
+
 }
