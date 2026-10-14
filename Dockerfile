@@ -1,4 +1,4 @@
-# RELP sink for Microsoft Azure EventHub (aew_01)
+# RELP bridge for Microsoft Azure EventHub (aew_01)
 # Copyright (C) 2021-2026 Suomen Kanuuna Oy
 #
 # This program is free software: you can redistribute it and/or modify
