@@ -1,4 +1,4 @@
-= AEW_01: RELP sink for Microsoft Azure EventHub
+= AEW_01: RELP bridge for Microsoft Azure EventHub
 
 This package provides containerized application for continually receiving RELP messages and writing them to Microsoft Azure EventHub. The containerized application can be run on Microsoft Azure Container Apps platform.
 

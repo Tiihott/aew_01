@@ -6,7 +6,7 @@
   <version>${revision}${sha1}${changelist}</version>
   <packaging>jar</packaging>
   <name>aew_01</name>
-  <description>RELP sink for Microsoft Azure EventHub</description>
+  <description>RELP bridge for Microsoft Azure EventHub</description>
   <url>https://teragrep.com</url>
   <properties>
     <!-- indentation is intentionally broken -->
@@ -248,9 +248,9 @@
               <all>
                 <copyright>
                   <owner>Suomen Kanuuna Oy</owner>
-                  <start>2024</start>
+                  <start>2026</start>
                 </copyright>
-                <text>RELP sink for Microsoft Azure EventHub (aew_01)</text>
+                <text>RELP bridge for Microsoft Azure EventHub (aew_01)</text>
               </all>
               <family>Teragrep</family>
             </license>
