@@ -89,16 +89,14 @@ public class Main {
         else {
             throw new IllegalArgumentException("Unsupported connection type");
         }
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(
-                relpConfig.frameContextsCapacity()
-        );
+        final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(relpConfig.frameContextsCapacity());
         try (
                 final SinkServer server = new SinkServer(
                         metricRegistry,
                         relpConfig,
                         metricsConfig,
                         amqpClient,
-                        relpCommandConsumerMapBuilder
+                        relpCommandConsumers
                 )
         ) {
             server.start();

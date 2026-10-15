@@ -57,25 +57,25 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-public final class RelpCommandConsumerMapBuilder {
+public final class RelpCommandConsumers {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RelpCommandConsumerMapBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpCommandConsumers.class);
 
     private final BlockingQueue<FrameContext> frameContexts;
 
-    RelpCommandConsumerMapBuilder(BlockingQueue<FrameContext> frameContexts) {
+    RelpCommandConsumers(BlockingQueue<FrameContext> frameContexts) {
         this.frameContexts = frameContexts;
     }
 
-    RelpCommandConsumerMapBuilder(int frameContextsCapacity) {
+    RelpCommandConsumers(int frameContextsCapacity) {
         this(new ArrayBlockingQueue<>(frameContextsCapacity));
     };
 
-    RelpCommandConsumerMapBuilder() {
+    RelpCommandConsumers() {
         this(new ArrayBlockingQueue<>(1024));
     }
 
-    public Map<String, RelpEvent> build() {
+    public Map<String, RelpEvent> asMap() {
         final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
         relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());

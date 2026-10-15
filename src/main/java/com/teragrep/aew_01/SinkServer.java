@@ -71,7 +71,7 @@ public final class SinkServer implements AutoCloseable {
             RelpConfig relpConfig,
             MetricsConfig metricsConfig,
             AmqpClient amqpClient,
-            RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder
+            RelpCommandConsumers relpCommandConsumers
     ) {
         this(
                 metricRegistry,
@@ -83,13 +83,9 @@ public final class SinkServer implements AutoCloseable {
                         relpConfig.tlsTruststorePassword(),
                         relpConfig.tlsKeystorePassword(),
                         relpConfig.processingThreads(),
-                        relpCommandConsumerMapBuilder.build()
+                        relpCommandConsumers.asMap()
                 ),
-                new DeferredSyslog(
-                        relpCommandConsumerMapBuilder.frameContexts(),
-                        amqpClient,
-                        metricRegistry.meter("relpMeter")
-                )
+                new DeferredSyslog(relpCommandConsumers.frameContexts(), amqpClient, metricRegistry.meter("relpMeter"))
         );
     }
 

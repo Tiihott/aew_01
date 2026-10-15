@@ -138,15 +138,13 @@ class SinkServerTest {
                 amqpConfig.eventHubName(),
                 metricRegistry.meter("amqpMeter")
         );
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(
-                relpConfig.frameContextsCapacity()
-        );
+        final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(relpConfig.frameContextsCapacity());
         SinkServer sinkServer = new SinkServer(
                 metricRegistry,
                 relpConfig,
                 metricsConfig,
                 amqpClient,
-                relpCommandConsumerMapBuilder
+                relpCommandConsumers
         );
         Thread thread = startServer(sinkServer);
         // Wait for the server to start
