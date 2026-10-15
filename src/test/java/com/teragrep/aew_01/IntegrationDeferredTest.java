@@ -100,10 +100,8 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqp() {
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(1024)
-                .build();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        ;
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(1024);
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.build();
         final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
@@ -208,10 +206,8 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpSingleMediumBatch() {
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(1024)
-                .build();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        ;
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(1024);
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.build();
         final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
@@ -315,10 +311,8 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpMultipleMediumBatches() {
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024)
-                .build();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        ;
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024);
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.build();
         final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
@@ -421,10 +415,8 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqp100x100Batches() {
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024)
-                .build();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        ;
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024);
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.build();
         final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
@@ -527,10 +519,8 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqp100x1000Batches() {
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(100024)
-                .build();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        ;
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(100024);
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.build();
         final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
@@ -633,10 +623,8 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpSingleLargeBatch() {
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024)
-                .build();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
-        ;
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(10024);
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.build();
         final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.
@@ -740,9 +728,8 @@ public class IntegrationDeferredTest {
 
     @Test
     void testDeferredRelpAndAmqpSingleVeryLargeBatch() {
-        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(100024)
-                .build();
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.relpCommandConsumerMap();
+        final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(100024);
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumerMapBuilder.build();
         final BlockingQueue<FrameContext> frameContexts = relpCommandConsumerMapBuilder.frameContexts();
 
         // Create async consumer that listens for all incoming messages to EventHub.

@@ -140,7 +140,7 @@ class SinkServerTest {
         );
         final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(
                 relpConfig.frameContextsCapacity()
-        ).build();
+        );
         SinkServer sinkServer = new SinkServer(
                 metricRegistry,
                 relpConfig,

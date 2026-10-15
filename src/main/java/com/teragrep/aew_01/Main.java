@@ -91,7 +91,7 @@ public class Main {
         }
         final RelpCommandConsumerMapBuilder relpCommandConsumerMapBuilder = new RelpCommandConsumerMapBuilder(
                 relpConfig.frameContextsCapacity()
-        ).build();
+        );
         try (
                 final SinkServer server = new SinkServer(
                         metricRegistry,

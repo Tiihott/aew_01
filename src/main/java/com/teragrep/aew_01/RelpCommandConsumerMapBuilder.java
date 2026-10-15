@@ -61,33 +61,22 @@ public final class RelpCommandConsumerMapBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RelpCommandConsumerMapBuilder.class);
 
-    private final HashMap<String, RelpEvent> relpCommandConsumerMap;
     private final BlockingQueue<FrameContext> frameContexts;
-    private final boolean stub;
 
-    RelpCommandConsumerMapBuilder(
-            HashMap<String, RelpEvent> relpCommandConsumerMap,
-            BlockingQueue<FrameContext> frameContexts,
-            boolean stub
-    ) {
-        this.relpCommandConsumerMap = relpCommandConsumerMap;
+    RelpCommandConsumerMapBuilder(BlockingQueue<FrameContext> frameContexts) {
         this.frameContexts = frameContexts;
-        this.stub = stub;
     }
 
     RelpCommandConsumerMapBuilder(int frameContextsCapacity) {
-        this(new HashMap<>(), new ArrayBlockingQueue<>(frameContextsCapacity), true);
+        this(new ArrayBlockingQueue<>(frameContextsCapacity));
     };
 
     RelpCommandConsumerMapBuilder() {
-        this(new HashMap<>(), new ArrayBlockingQueue<>(1024), true);
+        this(new ArrayBlockingQueue<>(1024));
     }
 
-    public RelpCommandConsumerMapBuilder build() {
-        if (!relpCommandConsumerMap.isEmpty() && !stub) {
-            LOGGER.warn("RelpCommandConsumerMap is already built");
-            return new RelpCommandConsumerMapBuilder(relpCommandConsumerMap, frameContexts, false);
-        }
+    public Map<String, RelpEvent> build() {
+        final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
         relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
         RelpEvent syslogRelpEvent = new RelpEvent() {
@@ -109,24 +98,10 @@ public final class RelpCommandConsumerMapBuilder {
             }
         };
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
-        return new RelpCommandConsumerMapBuilder(relpCommandConsumerMap, frameContexts, false);
-    }
-
-    public Map<String, RelpEvent> relpCommandConsumerMap() {
-        if (stub) {
-            throw new IllegalStateException("RelpCommandConsumerMap has not been built");
-        }
-        else {
-            return relpCommandConsumerMap;
-        }
+        return relpCommandConsumerMap;
     }
 
     public BlockingQueue<FrameContext> frameContexts() {
-        if (stub) {
-            throw new IllegalStateException("RelpCommandConsumerMap using the frameContexts has not been built");
-        }
-        else {
-            return frameContexts;
-        }
+        return frameContexts;
     }
 }
