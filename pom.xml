@@ -20,8 +20,8 @@
     <prometheus.version>1.6.1</prometheus.version>
     <revision>0.0.1</revision>
     <sha1></sha1>
-    <teragrep.rlp_01.version>7.0.0</teragrep.rlp_01.version>
-    <teragrep.rlp_03.version>10.0.0</teragrep.rlp_03.version>
+    <teragrep.rlp_01.version>7.0.1</teragrep.rlp_01.version>
+    <teragrep.rlp_03.version>10.0.1</teragrep.rlp_03.version>
   </properties>
   <dependencies>
     <!-- tests -->
