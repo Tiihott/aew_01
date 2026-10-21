@@ -56,15 +56,15 @@ public final class SyslogRelpEvent extends RelpEvent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyslogRelpEvent.class);
 
-    private final BlockingQueue<FrameContext> frameContexts;
+    private final BlockingQueue<FrameContext> ingressQueue;
 
-    SyslogRelpEvent(BlockingQueue<FrameContext> frameContexts) {
-        this.frameContexts = frameContexts;
+    SyslogRelpEvent(BlockingQueue<FrameContext> ingressQueue) {
+        this.ingressQueue = ingressQueue;
     }
 
     @Override
     public void accept(FrameContext frameContext) {
-        frameContexts.add(frameContext);
+        ingressQueue.add(frameContext);
         LOGGER
                 .debug(
                         "Accepted new RELP SYSLOG event for deferred processing: txn={} command={} endOfTransfer={}",
@@ -75,7 +75,7 @@ public final class SyslogRelpEvent extends RelpEvent {
 
     @Override
     public void close() {
-        frameContexts.clear();
+        ingressQueue.clear();
     }
 
 }

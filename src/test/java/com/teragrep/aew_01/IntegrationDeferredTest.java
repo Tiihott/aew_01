@@ -102,7 +102,7 @@ public class IntegrationDeferredTest {
     void testDeferredRelpAndAmqp() {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(1024);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumers.frameContexts();
+        final BlockingQueue<FrameContext> ingressQueue = relpCommandConsumers.ingressQueue();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -134,7 +134,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(ingressQueue, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
@@ -208,7 +208,7 @@ public class IntegrationDeferredTest {
     void testDeferredRelpAndAmqpSingleMediumBatch() {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(1024);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumers.frameContexts();
+        final BlockingQueue<FrameContext> ingressQueue = relpCommandConsumers.ingressQueue();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -236,7 +236,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(ingressQueue, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
@@ -313,7 +313,7 @@ public class IntegrationDeferredTest {
     void testDeferredRelpAndAmqpMultipleMediumBatches() {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(10024);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumers.frameContexts();
+        final BlockingQueue<FrameContext> ingressQueue = relpCommandConsumers.ingressQueue();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -341,7 +341,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(ingressQueue, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
@@ -417,7 +417,7 @@ public class IntegrationDeferredTest {
     void testDeferredRelpAndAmqp100x100Batches() {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(10024);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumers.frameContexts();
+        final BlockingQueue<FrameContext> ingressQueue = relpCommandConsumers.ingressQueue();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -445,7 +445,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(ingressQueue, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
@@ -521,7 +521,7 @@ public class IntegrationDeferredTest {
     void testDeferredRelpAndAmqp100x1000Batches() {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(100024);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumers.frameContexts();
+        final BlockingQueue<FrameContext> ingressQueue = relpCommandConsumers.ingressQueue();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -549,7 +549,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(ingressQueue, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
@@ -625,7 +625,7 @@ public class IntegrationDeferredTest {
     void testDeferredRelpAndAmqpSingleLargeBatch() {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(10024);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumers.frameContexts();
+        final BlockingQueue<FrameContext> ingressQueue = relpCommandConsumers.ingressQueue();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -653,7 +653,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(ingressQueue, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);
@@ -730,7 +730,7 @@ public class IntegrationDeferredTest {
     void testDeferredRelpAndAmqpSingleVeryLargeBatch() {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(100024);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
-        final BlockingQueue<FrameContext> frameContexts = relpCommandConsumers.frameContexts();
+        final BlockingQueue<FrameContext> ingressQueue = relpCommandConsumers.ingressQueue();
 
         // Create async consumer that listens for all incoming messages to EventHub.
         final List<String> receivedPayloads = new ArrayList<>();
@@ -758,7 +758,7 @@ public class IntegrationDeferredTest {
         /*
          * Start deferred processing, otherwise our client will wait forever for a response
          */
-        DeferredSyslog deferredSyslog = new DeferredSyslog(frameContexts, amqpClient, relpMeter);
+        DeferredSyslog deferredSyslog = new DeferredSyslog(ingressQueue, amqpClient, relpMeter);
         Thread deferredProcessingThread = new Thread(deferredSyslog);
         deferredProcessingThread.start();
         final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap);

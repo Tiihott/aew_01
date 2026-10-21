@@ -85,7 +85,7 @@ public final class SinkServer implements AutoCloseable {
                         relpConfig.processingThreads(),
                         relpCommandConsumers.asMap()
                 ),
-                new DeferredSyslog(relpCommandConsumers.frameContexts(), amqpClient, metricRegistry.meter("relpMeter"))
+                new DeferredSyslog(relpCommandConsumers.ingressQueue(), amqpClient, metricRegistry.meter("relpMeter"))
         );
     }
 

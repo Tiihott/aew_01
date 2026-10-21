@@ -61,14 +61,14 @@ public final class RelpCommandConsumers {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RelpCommandConsumers.class);
 
-    private final BlockingQueue<FrameContext> frameContexts;
+    private final BlockingQueue<FrameContext> ingressQueue;
 
-    RelpCommandConsumers(BlockingQueue<FrameContext> frameContexts) {
-        this.frameContexts = frameContexts;
+    RelpCommandConsumers(BlockingQueue<FrameContext> ingressQueue) {
+        this.ingressQueue = ingressQueue;
     }
 
-    RelpCommandConsumers(int frameContextsCapacity) {
-        this(new ArrayBlockingQueue<>(frameContextsCapacity));
+    RelpCommandConsumers(int ingressQueueCapacity) {
+        this(new ArrayBlockingQueue<>(ingressQueueCapacity));
     };
 
     RelpCommandConsumers() {
@@ -79,12 +79,12 @@ public final class RelpCommandConsumers {
         final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
         relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-        RelpEvent syslogRelpEvent = new SyslogRelpEvent(frameContexts);
+        RelpEvent syslogRelpEvent = new SyslogRelpEvent(ingressQueue);
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
         return relpCommandConsumerMap;
     }
 
-    public BlockingQueue<FrameContext> frameContexts() {
-        return frameContexts;
+    public BlockingQueue<FrameContext> ingressQueue() {
+        return ingressQueue;
     }
 }

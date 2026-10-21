@@ -61,7 +61,7 @@ public class DeferredSyslog implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeferredSyslog.class);
 
-    private final BlockingQueue<FrameContext> frameContexts;
+    private final BlockingQueue<FrameContext> ingressQueue;
     private final AmqpClient amqpClient;
     private final Meter relpMeter;
     private final CompletableFuture<String> startCompletableFuture;
@@ -70,8 +70,8 @@ public class DeferredSyslog implements Runnable {
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     public final AtomicBoolean run;
 
-    DeferredSyslog(BlockingQueue<FrameContext> frameContexts, AmqpClient amqpClient, Meter relpMeter) {
-        this.frameContexts = frameContexts;
+    DeferredSyslog(BlockingQueue<FrameContext> ingressQueue, AmqpClient amqpClient, Meter relpMeter) {
+        this.ingressQueue = ingressQueue;
         this.amqpClient = amqpClient;
         this.relpMeter = relpMeter;
         this.startCompletableFuture = new CompletableFuture<>();
@@ -85,7 +85,7 @@ public class DeferredSyslog implements Runnable {
         while (run.get()) {
             try {
                 // this will read at least one
-                FrameContext frameContext = frameContexts.poll(1, TimeUnit.SECONDS);
+                FrameContext frameContext = ingressQueue.poll(1, TimeUnit.SECONDS);
                 startCompletableFuture.complete("Deferred handling started");
 
                 if (frameContext == null) {
