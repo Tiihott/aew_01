@@ -65,6 +65,7 @@ public class DeferredSyslog implements Runnable {
     private final AmqpClient amqpClient;
     private final Meter relpMeter;
     private final CompletableFuture<String> startCompletableFuture;
+    private final RelpFrameFactory relpFrameFactory;
 
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     public final AtomicBoolean run;
@@ -74,6 +75,7 @@ public class DeferredSyslog implements Runnable {
         this.amqpClient = amqpClient;
         this.relpMeter = relpMeter;
         this.startCompletableFuture = new CompletableFuture<>();
+        this.relpFrameFactory = new RelpFrameFactory();
 
         this.run = new AtomicBoolean(true);
     }
@@ -92,7 +94,7 @@ public class DeferredSyslog implements Runnable {
                 }
 
                 RelpFrame relpFrame = frameContext.relpFrame();
-                EventData eventData = new EventData(relpFrame.payload().toString());
+                EventData eventData = new EventData(relpFrame.payload().toBytes());
                 CompletableFuture<Void> acceptTransactionFuture = CompletableFuture
                         .supplyAsync(
                                 () -> {
@@ -102,7 +104,6 @@ public class DeferredSyslog implements Runnable {
                         )
                         .thenAccept(result -> {
                             result.whenCompleteAsync((s, e) -> {
-                                RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
                                 RelpFrame responseFrame = relpFrameFactory
                                         .create(relpFrame.txn().toBytes(), "rsp", "200 OK");
                                 Writeable writeable = responseFrame.toWriteable();
