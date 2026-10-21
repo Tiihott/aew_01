@@ -79,24 +79,7 @@ public final class RelpCommandConsumers {
         final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
         relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-        RelpEvent syslogRelpEvent = new RelpEvent() {
-
-            @Override
-            public void accept(FrameContext frameContext) {
-                frameContexts.add(frameContext);
-                LOGGER
-                        .debug(
-                                "Accepted new RELP SYSLOG event for deferred processing: txn={} command={} endOfTransfer={}",
-                                frameContext.relpFrame().txn(), frameContext.relpFrame().command(),
-                                frameContext.relpFrame().endOfTransfer()
-                        );
-            }
-
-            @Override
-            public void close() {
-                frameContexts.clear();
-            }
-        };
+        RelpEvent syslogRelpEvent = new SyslogRelpEvent(frameContexts);
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
         return relpCommandConsumerMap;
     }
