@@ -46,7 +46,6 @@
 package com.teragrep.aew_01;
 
 import com.teragrep.rlp_01.RelpCommand;
-import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
 import org.slf4j.Logger;
@@ -54,37 +53,23 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 public final class RelpCommandConsumers {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RelpCommandConsumers.class);
 
-    private final BlockingQueue<FrameContext> ingressQueue;
+    private final SyslogProcessing syslogProcessing;
 
-    RelpCommandConsumers(BlockingQueue<FrameContext> ingressQueue) {
-        this.ingressQueue = ingressQueue;
-    }
-
-    RelpCommandConsumers(int ingressQueueCapacity) {
-        this(new ArrayBlockingQueue<>(ingressQueueCapacity));
-    };
-
-    RelpCommandConsumers() {
-        this(new ArrayBlockingQueue<>(1024));
+    RelpCommandConsumers(SyslogProcessing syslogProcessing) {
+        this.syslogProcessing = syslogProcessing;
     }
 
     public Map<String, RelpEvent> asMap() {
         final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
         relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
-        RelpEvent syslogRelpEvent = new SyslogRelpEvent(ingressQueue);
+        RelpEvent syslogRelpEvent = new SyslogRelpEvent(syslogProcessing);
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
         return relpCommandConsumerMap;
-    }
-
-    public BlockingQueue<FrameContext> ingressQueue() {
-        return ingressQueue;
     }
 }

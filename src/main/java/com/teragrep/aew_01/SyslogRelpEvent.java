@@ -50,21 +50,19 @@ import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.BlockingQueue;
-
 public final class SyslogRelpEvent extends RelpEvent {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyslogRelpEvent.class);
 
-    private final BlockingQueue<FrameContext> ingressQueue;
+    private final SyslogProcessing syslogProcessing;
 
-    SyslogRelpEvent(BlockingQueue<FrameContext> ingressQueue) {
-        this.ingressQueue = ingressQueue;
+    SyslogRelpEvent(SyslogProcessing syslogProcessing) {
+        this.syslogProcessing = syslogProcessing;
     }
 
     @Override
     public void accept(FrameContext frameContext) {
-        ingressQueue.add(frameContext);
+        syslogProcessing.process(frameContext);
         LOGGER
                 .debug(
                         "Accepted new RELP SYSLOG event for deferred processing: txn={} command={} endOfTransfer={}",
@@ -75,7 +73,6 @@ public final class SyslogRelpEvent extends RelpEvent {
 
     @Override
     public void close() {
-        ingressQueue.clear();
     }
 
 }

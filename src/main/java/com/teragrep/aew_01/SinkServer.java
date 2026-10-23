@@ -62,9 +62,7 @@ public final class SinkServer implements AutoCloseable {
     private final MetricRegistry metricRegistry;
     private final MetricsConfig metricsConfig;
     private final RELP relp;
-    private final DeferredSyslog deferredSyslog;
     private final AmqpClient amqpClient;
-    private final Thread deferredProcessingThread;
 
     public SinkServer(
             MetricRegistry metricRegistry,
@@ -84,24 +82,15 @@ public final class SinkServer implements AutoCloseable {
                         relpConfig.tlsKeystorePassword(),
                         relpConfig.processingThreads(),
                         relpCommandConsumers.asMap()
-                ),
-                new DeferredSyslog(relpCommandConsumers.ingressQueue(), amqpClient, metricRegistry.meter("relpMeter"))
+                )
         );
     }
 
-    public SinkServer(
-            MetricRegistry metricRegistry,
-            MetricsConfig metricsConfig,
-            AmqpClient amqpClient,
-            RELP relp,
-            DeferredSyslog deferredSyslog
-    ) {
+    public SinkServer(MetricRegistry metricRegistry, MetricsConfig metricsConfig, AmqpClient amqpClient, RELP relp) {
         this.metricRegistry = metricRegistry;
         this.metricsConfig = metricsConfig;
         this.amqpClient = amqpClient;
         this.relp = relp;
-        this.deferredSyslog = deferredSyslog;
-        this.deferredProcessingThread = new Thread(deferredSyslog);
     }
 
     public void start() {
@@ -124,7 +113,6 @@ public final class SinkServer implements AutoCloseable {
         /*
          * Start deferred processing before running the RELP server, otherwise our client will wait forever for a response
          */
-        deferredProcessingThread.start();
 
         Thread relpThread = new Thread(relp);
         relpThread.start();
@@ -135,15 +123,5 @@ public final class SinkServer implements AutoCloseable {
         LOGGER.debug("Closing SinkServer");
         relp.close();
         amqpClient.close();
-        /*
-         * Stop the deferred processing thread
-         */
-        deferredSyslog.run.set(false);
-        try {
-            deferredProcessingThread.join();
-        }
-        catch (InterruptedException interruptedException) {
-            throw new RuntimeException(interruptedException);
-        }
     }
 }

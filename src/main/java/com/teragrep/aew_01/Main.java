@@ -89,7 +89,8 @@ public class Main {
         else {
             throw new IllegalArgumentException("Unsupported connection type");
         }
-        final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(relpConfig.frameContextsCapacity());
+        final SyslogProcessing syslogProcessing = new SyslogProcessing(amqpClient, metricRegistry.meter("relpMeter"));
+        final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         try (
                 final SinkServer server = new SinkServer(
                         metricRegistry,

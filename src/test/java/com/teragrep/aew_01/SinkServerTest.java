@@ -47,12 +47,14 @@ package com.teragrep.aew_01;
 
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
 import com.azure.messaging.eventhubs.EventHubConsumerAsyncClient;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aew_01.config.AmqpConfig;
 import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
 import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpConnection;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,6 +71,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 class SinkServerTest {
@@ -133,12 +136,15 @@ class SinkServerTest {
                 "connectionString"
         );
         MetricsConfig metricsConfig = new MetricsConfig(9090);
+        final Meter relpMeter = metricRegistry.meter("amqpMeter");
         final AmqpClient amqpClient = new AmqpClient(
                 amqpConfig.connectionString(),
                 amqpConfig.eventHubName(),
-                metricRegistry.meter("amqpMeter")
+                relpMeter
         );
-        final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(relpConfig.frameContextsCapacity());
+        SyslogProcessing syslogProcessing = new SyslogProcessing(amqpClient, relpMeter);
+        final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
+        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
         SinkServer sinkServer = new SinkServer(
                 metricRegistry,
                 relpConfig,
