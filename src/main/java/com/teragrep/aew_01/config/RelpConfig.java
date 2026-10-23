@@ -54,7 +54,6 @@ public final class RelpConfig {
     private final String tlsKeystorePassword;
     private final String tlsTruststorePassword;
     private final int processingThreads;
-    private final int frameContextsCapacity;
 
     public RelpConfig(final Sourceable configSource) {
         this(
@@ -62,8 +61,7 @@ public final class RelpConfig {
                 configSource.source("relp.tls"),
                 configSource.source("relp.tlsKeystorePassword"),
                 configSource.source("relp.tlsTruststorePassword"),
-                configSource.source("relp.processingThreads"),
-                configSource.source("relp.frameContextsCapacity")
+                configSource.source("relp.processingThreads")
         );
     }
 
@@ -72,17 +70,9 @@ public final class RelpConfig {
             String tls,
             String tlsKeystorePassword,
             String tlsTruststorePassword,
-            String processingThreads,
-            String frameContextsCapacity
+            String processingThreads
     ) {
-        this(
-                port,
-                tls,
-                tlsKeystorePassword,
-                tlsTruststorePassword,
-                Integer.parseInt(processingThreads),
-                Integer.parseInt(frameContextsCapacity)
-        );
+        this(port, tls, tlsKeystorePassword, tlsTruststorePassword, Integer.parseInt(processingThreads));
     }
 
     public RelpConfig(
@@ -90,15 +80,13 @@ public final class RelpConfig {
             String tls,
             String tlsKeystorePassword,
             String tlsTruststorePassword,
-            int processingThreads,
-            int frameContextsCapacity
+            int processingThreads
     ) {
         this.port = port;
         this.tls = tls;
         this.tlsKeystorePassword = tlsKeystorePassword;
         this.tlsTruststorePassword = tlsTruststorePassword;
         this.processingThreads = processingThreads;
-        this.frameContextsCapacity = frameContextsCapacity;
     }
 
     public String port() {
@@ -119,10 +107,6 @@ public final class RelpConfig {
 
     public int processingThreads() {
         return processingThreads;
-    }
-
-    public int frameContextsCapacity() {
-        return frameContextsCapacity;
     }
 
 }

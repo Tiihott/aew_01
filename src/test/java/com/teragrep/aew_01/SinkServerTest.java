@@ -127,7 +127,7 @@ class SinkServerTest {
         final MetricRegistry metricRegistry = new MetricRegistry();
         final String connectionString = eventHubs.getConnectionString();
         LOGGER.info("Connecting to AWS EventHubs at <{}>", connectionString);
-        RelpConfig relpConfig = new RelpConfig("1601", "false", "changeit", "changeit", "1", "10024");
+        RelpConfig relpConfig = new RelpConfig("1601", "false", "changeit", "changeit", "1");
         AmqpConfig amqpConfig = new AmqpConfig(
                 "eh1",
                 "emulatorNs1",
