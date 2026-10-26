@@ -105,7 +105,7 @@ class RELPTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap)) {
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start
@@ -158,7 +158,7 @@ class RELPTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap)) {
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start
@@ -217,7 +217,7 @@ class RELPTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap)) {
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start
@@ -278,7 +278,7 @@ class RELPTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap)) {
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start

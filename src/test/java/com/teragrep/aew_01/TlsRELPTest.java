@@ -153,7 +153,6 @@ public class TlsRELPTest {
                         "2601",
                         "src/test/resources/keystore-server.jks",
                         "changeit",
-                        1,
                         relpCommandConsumerMap
                 )
         ) {
@@ -224,7 +223,6 @@ public class TlsRELPTest {
                         "2601",
                         "src/test/resources/keystore-server.jks",
                         "changeit",
-                        1,
                         relpCommandConsumerMap
                 )
         ) {

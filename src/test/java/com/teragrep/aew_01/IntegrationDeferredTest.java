@@ -129,7 +129,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 10, relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start
@@ -224,7 +224,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 10, relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start
@@ -322,7 +322,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 10, relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start
@@ -419,7 +419,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 10, relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start
@@ -516,7 +516,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 10, relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start
@@ -613,7 +613,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 10, relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start
@@ -711,7 +711,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", 10, relpCommandConsumerMap);
+        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relp);
         relpThread.start();
         // Wait for the server to start

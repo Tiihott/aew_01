@@ -53,40 +53,21 @@ public final class RelpConfig {
     private final String tls;
     private final String tlsKeystorePassword;
     private final String tlsTruststorePassword;
-    private final int processingThreads;
 
     public RelpConfig(final Sourceable configSource) {
         this(
                 configSource.source("relp.port"),
                 configSource.source("relp.tls"),
                 configSource.source("relp.tlsKeystorePassword"),
-                configSource.source("relp.tlsTruststorePassword"),
-                configSource.source("relp.processingThreads")
+                configSource.source("relp.tlsTruststorePassword")
         );
     }
 
-    public RelpConfig(
-            String port,
-            String tls,
-            String tlsKeystorePassword,
-            String tlsTruststorePassword,
-            String processingThreads
-    ) {
-        this(port, tls, tlsKeystorePassword, tlsTruststorePassword, Integer.parseInt(processingThreads));
-    }
-
-    public RelpConfig(
-            String port,
-            String tls,
-            String tlsKeystorePassword,
-            String tlsTruststorePassword,
-            int processingThreads
-    ) {
+    public RelpConfig(String port, String tls, String tlsKeystorePassword, String tlsTruststorePassword) {
         this.port = port;
         this.tls = tls;
         this.tlsKeystorePassword = tlsKeystorePassword;
         this.tlsTruststorePassword = tlsTruststorePassword;
-        this.processingThreads = processingThreads;
     }
 
     public String port() {
@@ -103,10 +84,6 @@ public final class RelpConfig {
 
     public String tlsTruststorePassword() {
         return tlsTruststorePassword;
-    }
-
-    public int processingThreads() {
-        return processingThreads;
     }
 
 }

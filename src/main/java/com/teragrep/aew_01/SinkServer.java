@@ -80,7 +80,6 @@ public final class SinkServer implements AutoCloseable {
                         relpConfig.port(),
                         relpConfig.tlsTruststorePassword(),
                         relpConfig.tlsKeystorePassword(),
-                        relpConfig.processingThreads(),
                         relpCommandConsumers.asMap()
                 )
         );

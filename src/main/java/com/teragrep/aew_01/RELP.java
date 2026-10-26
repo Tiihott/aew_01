@@ -95,10 +95,9 @@ public final class RELP implements Runnable, AutoCloseable {
             final String port,
             final String tlsKeystore,
             final String tlsKeystorePassword,
-            final int processingThreads,
             final Map<String, RelpEvent> relpCommandConsumerMap
     ) {
-        this.executorService = Executors.newFixedThreadPool(processingThreads);
+        this.executorService = Executors.newVirtualThreadPerTaskExecutor();
         this.tls = tls;
         this.port = port;
         this.tlsKeystore = tlsKeystore;
