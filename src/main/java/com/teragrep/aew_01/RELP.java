@@ -52,7 +52,6 @@ import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.net_01.server.ServerFactory;
 import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
-import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
 import com.teragrep.rlp_03.frame.delegate.FrameDelegate;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.slf4j.Logger;
@@ -104,10 +103,7 @@ public final class RELP implements Runnable, AutoCloseable {
         this.port = port;
         this.tlsKeystore = tlsKeystore;
         this.tlsKeystorePassword = tlsKeystorePassword;
-        this.frameDelegateSupplier = () -> {
-            LOGGER.debug("Providing frameDelegate for a connection");
-            return new DefaultFrameDelegate(relpCommandConsumerMap);
-        };
+        this.frameDelegateSupplier = new FrameDelegateSupplier(relpCommandConsumerMap).supply();
         try {
             eventLoop = new EventLoopFactory().create();
         }
