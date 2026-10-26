@@ -47,8 +47,15 @@ package com.teragrep.aew_01;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.teragrep.net_01.channel.buffer.writable.Writeable;
 import com.teragrep.rlp_01.RelpBatch;
+import com.teragrep.rlp_01.RelpCommand;
 import com.teragrep.rlp_01.RelpConnection;
+import com.teragrep.rlp_03.frame.RelpFrame;
+import com.teragrep.rlp_03.frame.RelpFrameFactory;
+import com.teragrep.rlp_03.frame.delegate.FrameContext;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -56,6 +63,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
@@ -68,11 +76,36 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
+        final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                final RelpFrame relpFrame = frameContext.relpFrame();
+                final RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
+                final RelpFrame responseFrame = relpFrameFactory
+                        .create(frameContext.relpFrame().txn().toBytes(), "rsp", "200 OK");
+                final Writeable writeable = responseFrame.toWriteable();
+                try {
+                    frameContext.establishedContext().egress().accept(writeable);
+                }
+                catch (Exception ex) {
+                    LOGGER.error("Exception while writing response", ex);
+                }
+                relpFrame.close();
+                relpMeter.mark();
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
-            LOGGER.info(frameContext.relpFrame().payload().toString());
-            relpMeter.mark();
-        })) {
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start
@@ -96,11 +129,36 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
+        final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                final RelpFrame relpFrame = frameContext.relpFrame();
+                final RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
+                final RelpFrame responseFrame = relpFrameFactory
+                        .create(frameContext.relpFrame().txn().toBytes(), "rsp", "200 OK");
+                final Writeable writeable = responseFrame.toWriteable();
+                try {
+                    frameContext.establishedContext().egress().accept(writeable);
+                }
+                catch (Exception ex) {
+                    LOGGER.error("Exception while writing response", ex);
+                }
+                relpFrame.close();
+                relpMeter.mark();
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
-            LOGGER.info(frameContext.relpFrame().payload().toString());
-            relpMeter.mark();
-        })) {
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start
@@ -130,11 +188,36 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
+        final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                final RelpFrame relpFrame = frameContext.relpFrame();
+                final RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
+                final RelpFrame responseFrame = relpFrameFactory
+                        .create(frameContext.relpFrame().txn().toBytes(), "rsp", "200 OK");
+                final Writeable writeable = responseFrame.toWriteable();
+                try {
+                    frameContext.establishedContext().egress().accept(writeable);
+                }
+                catch (Exception ex) {
+                    LOGGER.error("Exception while writing response", ex);
+                }
+                relpFrame.close();
+                relpMeter.mark();
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
-            LOGGER.info(frameContext.relpFrame().payload().toString());
-            relpMeter.mark();
-        })) {
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start
@@ -164,13 +247,38 @@ class RELPTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
+        final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
+        RelpEvent syslogRelpEvent = new RelpEvent() {
+
+            @Override
+            public void accept(FrameContext frameContext) {
+                // Sleep for 2 seconds to trigger RELP client timeout exception, emulating EventHub throttling.
+                Assertions.assertDoesNotThrow(() -> Thread.sleep(2000));
+                final RelpFrame relpFrame = frameContext.relpFrame();
+                final RelpFrameFactory relpFrameFactory = new RelpFrameFactory();
+                final RelpFrame responseFrame = relpFrameFactory
+                        .create(frameContext.relpFrame().txn().toBytes(), "rsp", "200 OK");
+                final Writeable writeable = responseFrame.toWriteable();
+                try {
+                    frameContext.establishedContext().egress().accept(writeable);
+                }
+                catch (Exception ex) {
+                    LOGGER.error("Exception while writing response", ex);
+                }
+                relpFrame.close();
+                relpMeter.mark();
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
+
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, frameContext -> {
-            // Sleep for 2 seconds to trigger RELP client timeout exception, emulating EventHub throttling.
-            Assertions.assertDoesNotThrow(() -> Thread.sleep(2000));
-            LOGGER.info(frameContext.relpFrame().payload().toString());
-            relpMeter.mark();
-        })) {
+        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", 1, relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relp);
             relpThread.start();
             // Wait for the server to start

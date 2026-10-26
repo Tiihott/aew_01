@@ -53,7 +53,6 @@ import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.net_01.server.ServerFactory;
 import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
 import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
-import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.FrameDelegate;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.slf4j.Logger;
@@ -73,7 +72,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -92,33 +90,6 @@ public final class RELP implements Runnable, AutoCloseable {
     private final String port;
     private final String tlsKeystore;
     private final String tlsKeystorePassword;
-
-    public RELP(
-            final String tls,
-            final String port,
-            final String tlsKeystore,
-            final String tlsKeystorePassword,
-            final int processingThreads,
-            final Consumer<FrameContext> syslogConsumer
-    ) {
-        this.executorService = Executors.newFixedThreadPool(processingThreads);
-        this.tls = tls;
-        this.port = port;
-        this.tlsKeystore = tlsKeystore;
-        this.tlsKeystorePassword = tlsKeystorePassword;
-        this.frameDelegateSupplier = () -> {
-            LOGGER.debug("Providing frameDelegate for a connection");
-            return new DefaultFrameDelegate(syslogConsumer);
-        };
-        try {
-            eventLoop = new EventLoopFactory().create();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        eventLoopThread = new Thread(eventLoop);
-        startCompletableFuture = new CompletableFuture<>();
-    }
 
     public RELP(
             final String tls,
