@@ -134,8 +134,6 @@ public class IntegrationDeferredTest {
         relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
-        LOGGER.info("Waiting additional second just to make sure everything started properly");
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         // send 2 messages to the RELP server in a single batch.
         final int port = 1601;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -229,8 +227,6 @@ public class IntegrationDeferredTest {
         relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
-        LOGGER.info("Waiting additional second just to make sure everything started properly");
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         // send batch of 1000 messages to the RELP server.
         final int port = 1601;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -327,8 +323,6 @@ public class IntegrationDeferredTest {
         relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
-        LOGGER.info("Waiting additional second just to make sure everything started properly");
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         // send 10 batches of 1000 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -424,8 +418,6 @@ public class IntegrationDeferredTest {
         relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
-        LOGGER.info("Waiting additional second just to make sure everything started properly");
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         // send 100 batches of 100 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -521,8 +513,6 @@ public class IntegrationDeferredTest {
         relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
-        LOGGER.info("Waiting additional second just to make sure everything started properly");
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         // send 100 batches of 100 messages to the RELP server.
         final int port = 1601;
         int cursor = 1;
@@ -618,8 +608,6 @@ public class IntegrationDeferredTest {
         relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
-        LOGGER.info("Waiting additional second just to make sure everything started properly");
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         // send batch of 10000 messages to the RELP server.
         final int port = 1601;
         final RelpBatch relpBatch = new RelpBatch();
@@ -716,8 +704,6 @@ public class IntegrationDeferredTest {
         relpThread.start();
         // Wait for the server to start
         relp.startCompletableFuture().join();
-        LOGGER.info("Waiting additional second just to make sure everything started properly");
-        Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         // send batch of 100000 messages to the RELP server.
         final int port = 1601;
         final RelpBatch relpBatch = new RelpBatch();

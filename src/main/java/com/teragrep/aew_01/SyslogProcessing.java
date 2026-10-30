@@ -75,26 +75,32 @@ public class SyslogProcessing {
     public void process(FrameContext frameContext) {
         RelpFrame relpFrame = frameContext.relpFrame();
         EventData eventData = new EventData(relpFrame.payload().toBytes());
-        CompletableFuture<Void> acceptTransactionFuture = CompletableFuture
-                .supplyAsync(
-                        () -> {
-                            // Start publishing process
-                            return amqpClient.addEvents(eventData);
-                        }
-                )
-                .thenAccept(result -> {
-                    result.whenCompleteAsync((s, e) -> {
-                        RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
-                        Writeable writeable = responseFrame.toWriteable();
-                        try {
-                            frameContext.establishedContext().egress().accept(writeable);
-                        }
-                        catch (Exception ex) {
-                            LOGGER.error("Exception while writing response", ex);
-                        }
-                        relpFrame.close();
-                        relpMeter.mark();
-                    }, virtualThreadExecutor);
-                });
+        CompletableFuture<Void> acceptTransactionFuture = CompletableFuture.supplyAsync(() -> {
+            // Start publishing process
+            CompletableFuture<Void> voidCompletableFuture = amqpClient.addEvents(eventData);
+            return voidCompletableFuture;
+        }).thenAccept(result -> {
+            result.whenCompleteAsync((s, e) -> {
+                RelpFrame responseFrame = relpFrameFactory.create(relpFrame.txn().toBytes(), "rsp", "200 OK");
+                Writeable writeable = responseFrame.toWriteable();
+                try {
+                    frameContext.establishedContext().egress().accept(writeable);
+                }
+                catch (Exception ex) {
+                    LOGGER.error("Exception while writing response", ex);
+                }
+                relpFrame.close();
+                relpMeter.mark();
+            }, virtualThreadExecutor);
+        });
+        try {
+            acceptTransactionFuture.get();
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
