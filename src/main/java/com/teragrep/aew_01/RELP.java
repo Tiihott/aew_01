@@ -137,6 +137,13 @@ public final class RELP implements Runnable, AutoCloseable {
 
         try {
             serverFactory.create(Integer.parseInt(port));
+            LOGGER.debug("Waiting additional second just to make sure everything started properly");
+            try {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             // Complete the future to notify all other running threads that server is ready.
             startCompletableFuture.complete("Server started");
         }
