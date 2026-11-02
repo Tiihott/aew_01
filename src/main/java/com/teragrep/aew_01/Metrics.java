@@ -76,7 +76,7 @@ public final class Metrics {
     }
 
     void startMetrics() throws Exception {
-        LOGGER.info("Starting metrics for RELP sink for Microsoft Azure EventHub...");
+        LOGGER.info("Starting metrics for RELP bridge for Microsoft Azure EventHub...");
         jmxReporter.start();
         slf4jReporter.start(1, TimeUnit.MINUTES);
 
@@ -92,6 +92,6 @@ public final class Metrics {
         context.addServlet(servletHolder, "/metrics");
 
         jettyServer.start();
-        LOGGER.info("Metrics started for RELP sink for Microsoft Azure EventHub.");
+        LOGGER.info("Metrics started for RELP bridge for Microsoft Azure EventHub.");
     }
 }

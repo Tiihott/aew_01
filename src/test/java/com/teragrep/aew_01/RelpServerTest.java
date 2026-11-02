@@ -67,9 +67,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-class RELPTest {
+class RelpServerTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RELPTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpServerTest.class);
 
     @Test
     void testRun() {
@@ -105,12 +105,20 @@ class RELPTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap)) {
-            Thread relpThread = new Thread(relp);
+        try (
+                final RelpServer relpServer = new RelpServer(
+                        "false",
+                        "1601",
+                        "changeit",
+                        "changeit",
+                        relpCommandConsumerMap
+                )
+        ) {
+            Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
-            relp.startCompletableFuture().join();
-            // send message to the RELP server.
+            relpServer.startCompletableFuture().join();
+            // send message to the RelpServer.
             final RelpConnection relpConnection = new RelpConnection();
             final int port = 1601;
             Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
@@ -158,12 +166,20 @@ class RELPTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap)) {
-            Thread relpThread = new Thread(relp);
+        try (
+                final RelpServer relpServer = new RelpServer(
+                        "false",
+                        "1601",
+                        "changeit",
+                        "changeit",
+                        relpCommandConsumerMap
+                )
+        ) {
+            Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
-            relp.startCompletableFuture().join();
-            // send message to the RELP server.
+            relpServer.startCompletableFuture().join();
+            // send message to the RelpServer.
             final RelpConnection relpConnection = new RelpConnection();
             final int port = 1601;
             Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
@@ -217,12 +233,20 @@ class RELPTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap)) {
-            Thread relpThread = new Thread(relp);
+        try (
+                final RelpServer relpServer = new RelpServer(
+                        "false",
+                        "1601",
+                        "changeit",
+                        "changeit",
+                        relpCommandConsumerMap
+                )
+        ) {
+            Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
-            relp.startCompletableFuture().join();
-            // send message to the RELP server.
+            relpServer.startCompletableFuture().join();
+            // send message to the RelpServer.
             final RelpConnection relpConnection = new RelpConnection();
             final int port = 1601;
             Assertions.assertDoesNotThrow(() -> relpConnection.connect("localhost", port));
@@ -278,12 +302,20 @@ class RELPTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap)) {
-            Thread relpThread = new Thread(relp);
+        try (
+                final RelpServer relpServer = new RelpServer(
+                        "false",
+                        "1601",
+                        "changeit",
+                        "changeit",
+                        relpCommandConsumerMap
+                )
+        ) {
+            Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
-            relp.startCompletableFuture().join();
-            // send message to the RELP server.
+            relpServer.startCompletableFuture().join();
+            // send message to the RelpServer.
             final RelpConnection relpConnection = new RelpConnection();
             relpConnection.setConnectionTimeout(1000);
             relpConnection.setWriteTimeout(1000);

@@ -129,12 +129,12 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
+        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
-        relp.startCompletableFuture().join();
-        // send 2 messages to the RELP server in a single batch.
+        relpServer.startCompletableFuture().join();
+        // send 2 messages to the RelpServer in a single batch.
         final int port = 1601;
         final List<String> expectedPayloads = new ArrayList<>();
         List<Thread> sendThreads = new LinkedList<>();
@@ -170,7 +170,7 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         // Close all clients and processing
         consumer.close();
-        relp.close();
+        relpServer.close();
         amqpClient.close();
 
         // verify successful transaction
@@ -222,12 +222,12 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
+        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
-        relp.startCompletableFuture().join();
-        // send batch of 1000 messages to the RELP server.
+        relpServer.startCompletableFuture().join();
+        // send batch of 1000 messages to the RelpServer.
         final int port = 1601;
         final List<String> expectedPayloads = new ArrayList<>();
         List<Thread> sendThreads = new LinkedList<>();
@@ -263,7 +263,7 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         // Close all clients and processing
         consumer.close();
-        relp.close();
+        relpServer.close();
         amqpClient.close();
 
         // verify successful transaction
@@ -318,12 +318,12 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
+        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
-        relp.startCompletableFuture().join();
-        // send 10 batches of 1000 messages to the RELP server.
+        relpServer.startCompletableFuture().join();
+        // send 10 batches of 1000 messages to the RelpServer.
         final int port = 1601;
         int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -362,7 +362,7 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         // Close all clients and processing
         consumer.close();
-        relp.close();
+        relpServer.close();
         amqpClient.close();
 
         // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
@@ -413,12 +413,12 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
+        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
-        relp.startCompletableFuture().join();
-        // send 100 batches of 100 messages to the RELP server.
+        relpServer.startCompletableFuture().join();
+        // send 100 batches of 100 messages to the RelpServer.
         final int port = 1601;
         int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -457,7 +457,7 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         // Close all clients and processing
         consumer.close();
-        relp.close();
+        relpServer.close();
         amqpClient.close();
 
         // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
@@ -508,12 +508,12 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
+        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
-        relp.startCompletableFuture().join();
-        // send 100 batches of 100 messages to the RELP server.
+        relpServer.startCompletableFuture().join();
+        // send 100 batches of 100 messages to the RelpServer.
         final int port = 1601;
         int cursor = 1;
         final List<String> expectedPayloads = new ArrayList<>();
@@ -552,7 +552,7 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         // Close all clients and processing
         consumer.close();
-        relp.close();
+        relpServer.close();
         amqpClient.close();
 
         // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.
@@ -603,12 +603,12 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
+        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
-        relp.startCompletableFuture().join();
-        // send batch of 10000 messages to the RELP server.
+        relpServer.startCompletableFuture().join();
+        // send batch of 10000 messages to the RelpServer.
         final int port = 1601;
         final RelpBatch relpBatch = new RelpBatch();
         List<Long> reqIds = new ArrayList<>();
@@ -644,7 +644,7 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         // Close all clients and processing
         consumer.close();
-        relp.close();
+        relpServer.close();
         amqpClient.close();
         // verify successful transaction
         for (Long reqId : reqIds) {
@@ -699,12 +699,12 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RELP relp = new RELP("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
-        Thread relpThread = new Thread(relp);
+        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
-        relp.startCompletableFuture().join();
-        // send batch of 100000 messages to the RELP server.
+        relpServer.startCompletableFuture().join();
+        // send batch of 100000 messages to the RelpServer.
         final int port = 1601;
         final RelpBatch relpBatch = new RelpBatch();
         List<Long> reqIds = new ArrayList<>();
@@ -723,7 +723,7 @@ public class IntegrationDeferredTest {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
         while (amqpMeter.getCount() < 100000) {
-            LOGGER.info("Waiting for events to be processed by RELP... <{}>/100000", relpMeter.getCount());
+            LOGGER.info("Waiting for events to be processed by RelpServer... <{}>/100000", relpMeter.getCount());
             LOGGER.info("Waiting for events to be processed by AmqpClient... <{}>/100000", amqpMeter.getCount());
             LOGGER.info("relpBatch.verifyTransactionAll(): <{}>", relpBatch.verifyTransactionAll());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
@@ -744,7 +744,7 @@ public class IntegrationDeferredTest {
         Assertions.assertDoesNotThrow(() -> Thread.sleep(30000));
         // Close all clients and processing
         consumer.close();
-        relp.close();
+        relpServer.close();
         amqpClient.close();
 
         // EventHub Emulator throttling will cause semdBatch() to trigger RELP read timeout that will resend messages.

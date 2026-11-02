@@ -74,9 +74,9 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public final class RELP implements Runnable, AutoCloseable {
+public final class RelpServer implements Runnable, AutoCloseable {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RELP.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpServer.class);
 
     private final ExecutorService executorService;
     private final EventLoop eventLoop;
@@ -90,7 +90,7 @@ public final class RELP implements Runnable, AutoCloseable {
     private final String tlsKeystore;
     private final String tlsKeystorePassword;
 
-    public RELP(
+    public RelpServer(
             final String tls,
             final String port,
             final String tlsKeystore,

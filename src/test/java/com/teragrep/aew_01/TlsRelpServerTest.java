@@ -74,9 +74,9 @@ import java.security.KeyStore;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
-public class TlsRELPTest {
+public class TlsRelpServerTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RELPTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpServerTest.class);
 
     private static class InternalSSLContextFactory {
 
@@ -148,7 +148,7 @@ public class TlsRELPTest {
 
         // Use try-with-resources to make sure relp is autoclosed between each test
         try (
-                final RELP relp = new RELP(
+                final RelpServer relpServer = new RelpServer(
                         "true",
                         "2601",
                         "src/test/resources/keystore-server.jks",
@@ -156,11 +156,11 @@ public class TlsRELPTest {
                         relpCommandConsumerMap
                 )
         ) {
-            Thread relpThread = new Thread(relp);
+            Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
-            relp.startCompletableFuture().join();
-            // send message to the RELP server.
+            relpServer.startCompletableFuture().join();
+            // send message to the RelpServer.
             SSLContext sslContext = Assertions
                     .assertDoesNotThrow(
                             () -> InternalSSLContextFactory
@@ -218,7 +218,7 @@ public class TlsRELPTest {
 
         // Use try-with-resources to make sure relp is autoclosed between each test
         try (
-                final RELP relp = new RELP(
+                final RelpServer relpServer = new RelpServer(
                         "true",
                         "2601",
                         "src/test/resources/keystore-server.jks",
@@ -226,11 +226,11 @@ public class TlsRELPTest {
                         relpCommandConsumerMap
                 )
         ) {
-            Thread relpThread = new Thread(relp);
+            Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
-            relp.startCompletableFuture().join();
-            // Try connecting to the RELP server using plain RelpConnection
+            relpServer.startCompletableFuture().join();
+            // Try connecting to the RelpServer using plain RelpConnection
             final RelpConnection relpConnection = new RelpConnection();
             final int port = 2601;
             Assertions.assertThrows(IOException.class, () -> relpConnection.connect("localhost", port));

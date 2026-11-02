@@ -61,7 +61,7 @@ public final class SinkServer implements AutoCloseable {
 
     private final MetricRegistry metricRegistry;
     private final MetricsConfig metricsConfig;
-    private final RELP relp;
+    private final RelpServer relpServer;
     private final AmqpClient amqpClient;
 
     public SinkServer(
@@ -75,7 +75,7 @@ public final class SinkServer implements AutoCloseable {
                 metricRegistry,
                 metricsConfig,
                 amqpClient,
-                new RELP(
+                new RelpServer(
                         relpConfig.tls(),
                         relpConfig.port(),
                         relpConfig.tlsTruststorePassword(),
@@ -85,18 +85,23 @@ public final class SinkServer implements AutoCloseable {
         );
     }
 
-    public SinkServer(MetricRegistry metricRegistry, MetricsConfig metricsConfig, AmqpClient amqpClient, RELP relp) {
+    public SinkServer(
+            MetricRegistry metricRegistry,
+            MetricsConfig metricsConfig,
+            AmqpClient amqpClient,
+            RelpServer relpServer
+    ) {
         this.metricRegistry = metricRegistry;
         this.metricsConfig = metricsConfig;
         this.amqpClient = amqpClient;
-        this.relp = relp;
+        this.relpServer = relpServer;
     }
 
     public void start() {
         final JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
         final Slf4jReporter slf4jReporter = Slf4jReporter
                 .forRegistry(metricRegistry)
-                .outputTo(LoggerFactory.getLogger(RELP.class))
+                .outputTo(LoggerFactory.getLogger(RelpServer.class))
                 .convertRatesTo(TimeUnit.SECONDS)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .build();
@@ -109,18 +114,14 @@ public final class SinkServer implements AutoCloseable {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-        /*
-         * Start deferred processing before running the RELP server, otherwise our client will wait forever for a response
-         */
-
-        Thread relpThread = new Thread(relp);
+        Thread relpThread = new Thread(relpServer);
         relpThread.start();
     }
 
     @Override
     public void close() throws Exception {
         LOGGER.debug("Closing SinkServer");
-        relp.close();
+        relpServer.close();
         amqpClient.close();
     }
 }
