@@ -108,7 +108,7 @@ class RelpServerTest {
         try (
                 final RelpServer relpServer = new RelpServer(
                         "false",
-                        "1601",
+                        1601,
                         "changeit",
                         "changeit",
                         relpCommandConsumerMap
@@ -169,7 +169,7 @@ class RelpServerTest {
         try (
                 final RelpServer relpServer = new RelpServer(
                         "false",
-                        "1601",
+                        1601,
                         "changeit",
                         "changeit",
                         relpCommandConsumerMap
@@ -236,7 +236,7 @@ class RelpServerTest {
         try (
                 final RelpServer relpServer = new RelpServer(
                         "false",
-                        "1601",
+                        1601,
                         "changeit",
                         "changeit",
                         relpCommandConsumerMap
@@ -305,7 +305,7 @@ class RelpServerTest {
         try (
                 final RelpServer relpServer = new RelpServer(
                         "false",
-                        "1601",
+                        1601,
                         "changeit",
                         "changeit",
                         relpCommandConsumerMap

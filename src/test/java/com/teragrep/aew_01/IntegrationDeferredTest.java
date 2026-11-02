@@ -129,7 +129,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RelpServer relpServer = new RelpServer("false", 1601, "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
@@ -222,7 +222,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RelpServer relpServer = new RelpServer("false", 1601, "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
@@ -318,7 +318,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RelpServer relpServer = new RelpServer("false", 1601, "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
@@ -413,7 +413,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RelpServer relpServer = new RelpServer("false", 1601, "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
@@ -508,7 +508,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RelpServer relpServer = new RelpServer("false", 1601, "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
@@ -603,7 +603,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RelpServer relpServer = new RelpServer("false", 1601, "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start
@@ -699,7 +699,7 @@ public class IntegrationDeferredTest {
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
 
-        final RelpServer relpServer = new RelpServer("false", "1601", "changeit", "changeit", relpCommandConsumerMap);
+        final RelpServer relpServer = new RelpServer("false", 1601, "changeit", "changeit", relpCommandConsumerMap);
         Thread relpThread = new Thread(relpServer);
         relpThread.start();
         // Wait for the server to start

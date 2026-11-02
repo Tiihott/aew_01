@@ -55,7 +55,7 @@ class RelpConfigTest {
     @Test
     void port() {
         RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample");
-        Assertions.assertEquals("1234", relpConfig.port());
+        Assertions.assertEquals(1234, relpConfig.port());
     }
 
     @Test

@@ -150,7 +150,7 @@ public class TlsRelpServerTest {
         try (
                 final RelpServer relpServer = new RelpServer(
                         "true",
-                        "2601",
+                        2601,
                         "src/test/resources/keystore-server.jks",
                         "changeit",
                         relpCommandConsumerMap
@@ -220,7 +220,7 @@ public class TlsRelpServerTest {
         try (
                 final RelpServer relpServer = new RelpServer(
                         "true",
-                        "2601",
+                        2601,
                         "src/test/resources/keystore-server.jks",
                         "changeit",
                         relpCommandConsumerMap

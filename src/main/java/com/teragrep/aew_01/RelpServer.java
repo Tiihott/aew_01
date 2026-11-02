@@ -86,13 +86,13 @@ public final class RelpServer implements Runnable, AutoCloseable {
     private final Supplier<FrameDelegate> frameDelegateSupplier;
 
     private final String tls;
-    private final String port;
+    private final int port;
     private final String tlsKeystore;
     private final String tlsKeystorePassword;
 
     public RelpServer(
             final String tls,
-            final String port,
+            final int port,
             final String tlsKeystore,
             final String tlsKeystorePassword,
             final Map<String, RelpEvent> relpCommandConsumerMap
@@ -136,7 +136,7 @@ public final class RelpServer implements Runnable, AutoCloseable {
         );
 
         try {
-            serverFactory.create(Integer.parseInt(port));
+            serverFactory.create(port);
             LOGGER.debug("Waiting additional second just to make sure everything started properly");
             try {
                 Thread.sleep(1000);

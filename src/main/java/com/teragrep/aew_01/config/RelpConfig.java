@@ -70,8 +70,8 @@ public final class RelpConfig {
         this.tlsTruststorePassword = tlsTruststorePassword;
     }
 
-    public String port() {
-        return port;
+    public int port() {
+        return Integer.parseInt(port);
     }
 
     public String tls() {
