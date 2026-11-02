@@ -151,7 +151,7 @@ public class IntegrationDeferredTest {
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 2) {
+        while (amqpMeter.getCount() < 2) {
             LOGGER.info("Waiting for events to be processed by AmqpClient... <{}>/2", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
@@ -244,7 +244,7 @@ public class IntegrationDeferredTest {
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 1000) {
+        while (amqpMeter.getCount() < 1000) {
             LOGGER.info("Waiting for events to be processed by AmqpClient... <{}>/1000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
@@ -343,7 +343,7 @@ public class IntegrationDeferredTest {
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
+        while (amqpMeter.getCount() < 10000) {
             LOGGER.info("Waiting for events to be processed by AmqpClient... <{}>/10000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
@@ -438,7 +438,7 @@ public class IntegrationDeferredTest {
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
+        while (amqpMeter.getCount() < 10000) {
             LOGGER.info("Waiting for events to be processed by AmqpClient... <{}>/10000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
@@ -533,7 +533,7 @@ public class IntegrationDeferredTest {
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
+        while (amqpMeter.getCount() < 100000) {
             LOGGER.info("Waiting for events to be processed by AmqpClient... <{}>/100000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
@@ -625,7 +625,7 @@ public class IntegrationDeferredTest {
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 10000) {
+        while (amqpMeter.getCount() < 10000) {
             LOGGER.info("Waiting for events to be processed by AmqpClient... <{}>/10000", amqpMeter.getCount());
             Assertions.assertDoesNotThrow(() -> Thread.sleep(1000));
         }
@@ -722,7 +722,7 @@ public class IntegrationDeferredTest {
         for (Thread thread : sendThreads) {
             Assertions.assertDoesNotThrow(() -> thread.join());
         }
-        while (amqpMeter.getCount() != 0 && amqpMeter.getCount() < 100000) {
+        while (amqpMeter.getCount() < 100000) {
             LOGGER.info("Waiting for events to be processed by RELP... <{}>/100000", relpMeter.getCount());
             LOGGER.info("Waiting for events to be processed by AmqpClient... <{}>/100000", amqpMeter.getCount());
             LOGGER.info("relpBatch.verifyTransactionAll(): <{}>", relpBatch.verifyTransactionAll());
