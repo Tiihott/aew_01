@@ -47,6 +47,8 @@ package com.teragrep.aew_01;
 
 import com.azure.identity.ManagedIdentityCredentialBuilder;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Slf4jReporter;
+import com.codahale.metrics.jmx.JmxReporter;
 import com.teragrep.aew_01.config.AmqpConfig;
 import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
@@ -56,7 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
@@ -94,40 +96,41 @@ public class Main {
         final SyslogProcessing syslogProcessing = new SyslogProcessing(amqpClient, metricRegistry.meter("relpMeter"));
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
         final String tls = tlsConfig.tls();
-        final SinkServer server;
-        if (Boolean.parseBoolean(tls)) {
-            server = new SinkServer(
-                    metricRegistry,
-                    tlsConfig,
-                    relpConfig,
-                    metricsConfig,
-                    amqpClient,
-                    relpCommandConsumers
-            );
-        }
-        else {
-            server = new SinkServer(metricRegistry, relpConfig, metricsConfig, amqpClient, relpCommandConsumers);
-        }
-        try (server) {
-            server.start();
-            // Keep SinkServer running using CountDownLatch
-            final CountDownLatch latch = new CountDownLatch(1);
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                LOGGER.debug("Stopping SinkServer");
-                latch.countDown();
-            }));
-            while (true)
-                try {
-                    latch.await();
-                    break;
-                }
-                catch (InterruptedException e) {
-                    LOGGER.debug("Interruption in main thread latch.await(), retrying", e);
-                }
+
+        // Initialize metrics and prometheus
+        final JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
+        final Slf4jReporter slf4jReporter = Slf4jReporter
+                .forRegistry(metricRegistry)
+                .outputTo(LoggerFactory.getLogger(RelpServer.class))
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
+        final int prometheusPort = metricsConfig.prometheusPort();
+        final org.eclipse.jetty.server.Server jettyServer = new org.eclipse.jetty.server.Server(prometheusPort);
+        try {
+            final Metrics metrics = new Metrics(jmxReporter, slf4jReporter, metricRegistry, jettyServer);
+            metrics.startMetrics();
         }
         catch (Exception e) {
-            LOGGER.error("Error starting SinkServer", e);
-            throw new RuntimeException("Error occurred when initializing SinkServer", e);
+            throw new RuntimeException(e);
+        }
+        // Initialize and run RelpServer with tls
+        if (Boolean.parseBoolean(tls)) {
+            try (
+                    final RelpServer relpServer = new RelpServer(
+                            relpConfig.port(),
+                            relpCommandConsumers.asMap(),
+                            tlsConfig.tlsFactory()
+                    )
+            ) {
+                relpServer.run();
+            }
+        }
+        // Initialize and run RelpServer without tls
+        else {
+            try (final RelpServer relpServer = new RelpServer(relpConfig.port(), relpCommandConsumers.asMap())) {
+                relpServer.run();
+            }
         }
     }
 }
