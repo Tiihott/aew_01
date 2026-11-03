@@ -54,7 +54,6 @@ import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
 import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpConnection;
-import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,7 +70,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 class SinkServerTest {
@@ -127,7 +125,7 @@ class SinkServerTest {
         final MetricRegistry metricRegistry = new MetricRegistry();
         final String connectionString = eventHubs.getConnectionString();
         LOGGER.info("Connecting to AWS EventHubs at <{}>", connectionString);
-        RelpConfig relpConfig = new RelpConfig("1601", "false", "changeit", "changeit");
+        RelpConfig relpConfig = new RelpConfig("1601");
         AmqpConfig amqpConfig = new AmqpConfig(
                 "eh1",
                 "emulatorNs1",
@@ -144,7 +142,6 @@ class SinkServerTest {
         );
         SyslogProcessing syslogProcessing = new SyslogProcessing(amqpClient, relpMeter);
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
-        final Map<String, RelpEvent> relpCommandConsumerMap = relpCommandConsumers.asMap();
         SinkServer sinkServer = new SinkServer(
                 metricRegistry,
                 relpConfig,

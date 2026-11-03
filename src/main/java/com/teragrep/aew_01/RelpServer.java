@@ -47,7 +47,6 @@ package com.teragrep.aew_01;
 
 import com.teragrep.net_01.channel.socket.PlainFactory;
 import com.teragrep.net_01.channel.socket.SocketFactory;
-import com.teragrep.net_01.channel.socket.TLSFactory;
 import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.net_01.server.ServerFactory;
@@ -57,21 +56,13 @@ import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.GeneralSecurityException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class RelpServer implements Runnable, AutoCloseable {
@@ -85,23 +76,21 @@ public final class RelpServer implements Runnable, AutoCloseable {
 
     private final Supplier<FrameDelegate> frameDelegateSupplier;
 
-    private final String tls;
+    private final SocketFactory socketFactory;
+
     private final int port;
-    private final String tlsKeystore;
-    private final String tlsKeystorePassword;
+
+    public RelpServer(final int port, final Map<String, RelpEvent> relpCommandConsumerMap) {
+        this(port, relpCommandConsumerMap, new PlainFactory());
+    }
 
     public RelpServer(
-            final String tls,
             final int port,
-            final String tlsKeystore,
-            final String tlsKeystorePassword,
-            final Map<String, RelpEvent> relpCommandConsumerMap
+            final Map<String, RelpEvent> relpCommandConsumerMap,
+            SocketFactory socketFactory
     ) {
         this.executorService = Executors.newVirtualThreadPerTaskExecutor();
-        this.tls = tls;
         this.port = port;
-        this.tlsKeystore = tlsKeystore;
-        this.tlsKeystorePassword = tlsKeystorePassword;
         this.frameDelegateSupplier = new FrameDelegateSupplier(relpCommandConsumerMap).supply();
         try {
             eventLoop = new EventLoopFactory().create();
@@ -111,23 +100,12 @@ public final class RelpServer implements Runnable, AutoCloseable {
         }
         eventLoopThread = new Thread(eventLoop);
         startCompletableFuture = new CompletableFuture<>();
+        this.socketFactory = socketFactory;
     }
 
     @Override
     public void run() {
-
         eventLoopThread.start();
-
-        final SocketFactory socketFactory;
-
-        if (Boolean.parseBoolean(tls)) {
-            socketFactory = tlsServer();
-        }
-        else {
-            LOGGER.debug("Starting plain server on port <[{}]>", port);
-            socketFactory = new PlainFactory();
-        }
-
         final ServerFactory serverFactory = new ServerFactory(
                 eventLoop,
                 executorService,
@@ -168,49 +146,6 @@ public final class RelpServer implements Runnable, AutoCloseable {
             catch (InterruptedException e) {
                 LOGGER.debug("Interruption in main thread latch.await(), retrying", e);
             }
-    }
-
-    private TLSFactory tlsServer() {
-        LOGGER.debug("Starting TLS server on port <[{}]>", port);
-
-        final InputStream keystoreStream;
-        if (tlsKeystore != null) {
-            LOGGER.debug("Using user supplied keystore");
-            Path path = Paths.get(tlsKeystore);
-            if (!path.toFile().exists()) {
-                throw new RuntimeException("File " + tlsKeystore + " doesn't exist");
-            }
-            try {
-                keystoreStream = Files.newInputStream(path);
-            }
-            catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        else {
-            LOGGER.debug("Using default keystore");
-            // get server keyStore as inputstream, works on JAR packaging as well this way
-            keystoreStream = Main.class.getClassLoader().getResourceAsStream("keystore-server.jks");
-        }
-
-        SSLContext sslContext;
-        try {
-            sslContext = new TLSContextFactory().authenticatedContext(keystoreStream, tlsKeystorePassword, "TLSv1.3");
-        }
-        catch (GeneralSecurityException e) {
-            throw new RuntimeException("Can't create sslContext: " + e);
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
-        Function<SSLContext, SSLEngine> sslEngineFunction = sslCtx -> {
-            SSLEngine sslEngine = sslCtx.createSSLEngine();
-            sslEngine.setUseClientMode(false);
-            return sslEngine;
-        };
-
-        return new TLSFactory(sslContext, sslEngineFunction);
     }
 
     public CompletableFuture<String> startCompletableFuture() {

@@ -50,40 +50,16 @@ import com.teragrep.aew_01.config.source.Sourceable;
 public final class RelpConfig {
 
     private final String port;
-    private final String tls;
-    private final String tlsKeystorePassword;
-    private final String tlsTruststorePassword;
 
     public RelpConfig(final Sourceable configSource) {
-        this(
-                configSource.source("relp.port"),
-                configSource.source("relp.tls"),
-                configSource.source("relp.tlsKeystorePassword"),
-                configSource.source("relp.tlsTruststorePassword")
-        );
+        this(configSource.source("relp.port"));
     }
 
-    public RelpConfig(String port, String tls, String tlsKeystorePassword, String tlsTruststorePassword) {
+    public RelpConfig(String port) {
         this.port = port;
-        this.tls = tls;
-        this.tlsKeystorePassword = tlsKeystorePassword;
-        this.tlsTruststorePassword = tlsTruststorePassword;
     }
 
     public int port() {
         return Integer.parseInt(port);
     }
-
-    public String tls() {
-        return tls;
-    }
-
-    public String tlsKeystorePassword() {
-        return tlsKeystorePassword;
-    }
-
-    public String tlsTruststorePassword() {
-        return tlsTruststorePassword;
-    }
-
 }

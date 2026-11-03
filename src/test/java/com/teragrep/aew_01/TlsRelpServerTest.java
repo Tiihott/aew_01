@@ -47,6 +47,7 @@ package com.teragrep.aew_01;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import com.teragrep.aew_01.config.TlsConfig;
 import com.teragrep.net_01.channel.buffer.writable.Writeable;
 import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpCommand;
@@ -146,16 +147,9 @@ public class TlsRelpServerTest {
         };
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
+        TlsConfig tlsConfig = new TlsConfig("true", "src/test/resources/keystore-server.jks", "changeit");
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (
-                final RelpServer relpServer = new RelpServer(
-                        "true",
-                        2601,
-                        "src/test/resources/keystore-server.jks",
-                        "changeit",
-                        relpCommandConsumerMap
-                )
-        ) {
+        try (final RelpServer relpServer = new RelpServer(2601, relpCommandConsumerMap, tlsConfig.tlsFactory())) {
             Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
@@ -216,16 +210,9 @@ public class TlsRelpServerTest {
         };
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
+        TlsConfig tlsConfig = new TlsConfig("true", "src/test/resources/keystore-server.jks", "changeit");
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (
-                final RelpServer relpServer = new RelpServer(
-                        "true",
-                        2601,
-                        "src/test/resources/keystore-server.jks",
-                        "changeit",
-                        relpCommandConsumerMap
-                )
-        ) {
+        try (final RelpServer relpServer = new RelpServer(2601, relpCommandConsumerMap, tlsConfig.tlsFactory())) {
             Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start

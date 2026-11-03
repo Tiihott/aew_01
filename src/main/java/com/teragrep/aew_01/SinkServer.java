@@ -50,6 +50,7 @@ import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.jmx.JmxReporter;
 import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
+import com.teragrep.aew_01.config.TlsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,13 +76,23 @@ public final class SinkServer implements AutoCloseable {
                 metricRegistry,
                 metricsConfig,
                 amqpClient,
-                new RelpServer(
-                        relpConfig.tls(),
-                        relpConfig.port(),
-                        relpConfig.tlsTruststorePassword(),
-                        relpConfig.tlsKeystorePassword(),
-                        relpCommandConsumers.asMap()
-                )
+                new RelpServer(relpConfig.port(), relpCommandConsumers.asMap())
+        );
+    }
+
+    public SinkServer(
+            MetricRegistry metricRegistry,
+            TlsConfig tlsConfig,
+            RelpConfig relpConfig,
+            MetricsConfig metricsConfig,
+            AmqpClient amqpClient,
+            RelpCommandConsumers relpCommandConsumers
+    ) {
+        this(
+                metricRegistry,
+                metricsConfig,
+                amqpClient,
+                new RelpServer(relpConfig.port(), relpCommandConsumers.asMap(), tlsConfig.tlsFactory())
         );
     }
 

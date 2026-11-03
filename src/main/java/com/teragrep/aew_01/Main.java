@@ -50,6 +50,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aew_01.config.AmqpConfig;
 import com.teragrep.aew_01.config.MetricsConfig;
 import com.teragrep.aew_01.config.RelpConfig;
+import com.teragrep.aew_01.config.TlsConfig;
 import com.teragrep.aew_01.config.source.Sourceable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +67,7 @@ public class Main {
         final MetricRegistry metricRegistry = new MetricRegistry();
         final Sourceable configSource = ConfigSource.getConfigSource();
         final RelpConfig relpConfig = new RelpConfig(configSource);
+        final TlsConfig tlsConfig = new TlsConfig(configSource);
         final AmqpConfig amqpConfig = new AmqpConfig(configSource);
         final MetricsConfig metricsConfig = new MetricsConfig(configSource);
         final AmqpClient amqpClient;
@@ -91,15 +93,22 @@ public class Main {
         }
         final SyslogProcessing syslogProcessing = new SyslogProcessing(amqpClient, metricRegistry.meter("relpMeter"));
         final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
-        try (
-                final SinkServer server = new SinkServer(
-                        metricRegistry,
-                        relpConfig,
-                        metricsConfig,
-                        amqpClient,
-                        relpCommandConsumers
-                )
-        ) {
+        final String tls = tlsConfig.tls();
+        final SinkServer server;
+        if (Boolean.parseBoolean(tls)) {
+            server = new SinkServer(
+                    metricRegistry,
+                    tlsConfig,
+                    relpConfig,
+                    metricsConfig,
+                    amqpClient,
+                    relpCommandConsumers
+            );
+        }
+        else {
+            server = new SinkServer(metricRegistry, relpConfig, metricsConfig, amqpClient, relpCommandConsumers);
+        }
+        try (server) {
             server.start();
             // Keep SinkServer running using CountDownLatch
             final CountDownLatch latch = new CountDownLatch(1);

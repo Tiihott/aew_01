@@ -105,15 +105,7 @@ class RelpServerTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (
-                final RelpServer relpServer = new RelpServer(
-                        "false",
-                        1601,
-                        "changeit",
-                        "changeit",
-                        relpCommandConsumerMap
-                )
-        ) {
+        try (final RelpServer relpServer = new RelpServer(1601, relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
@@ -166,15 +158,7 @@ class RelpServerTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (
-                final RelpServer relpServer = new RelpServer(
-                        "false",
-                        1601,
-                        "changeit",
-                        "changeit",
-                        relpCommandConsumerMap
-                )
-        ) {
+        try (final RelpServer relpServer = new RelpServer(1601, relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
@@ -233,15 +217,7 @@ class RelpServerTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (
-                final RelpServer relpServer = new RelpServer(
-                        "false",
-                        1601,
-                        "changeit",
-                        "changeit",
-                        relpCommandConsumerMap
-                )
-        ) {
+        try (final RelpServer relpServer = new RelpServer(1601, relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start
@@ -302,15 +278,7 @@ class RelpServerTest {
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
 
         // Use try-with-resources to make sure relp is autoclosed between each test
-        try (
-                final RelpServer relpServer = new RelpServer(
-                        "false",
-                        1601,
-                        "changeit",
-                        "changeit",
-                        relpCommandConsumerMap
-                )
-        ) {
+        try (final RelpServer relpServer = new RelpServer(1601, relpCommandConsumerMap)) {
             Thread relpThread = new Thread(relpServer);
             relpThread.start();
             // Wait for the server to start

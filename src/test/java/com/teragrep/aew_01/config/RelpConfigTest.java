@@ -54,26 +54,8 @@ class RelpConfigTest {
 
     @Test
     void port() {
-        RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample");
+        RelpConfig relpConfig = new RelpConfig("1234");
         Assertions.assertEquals(1234, relpConfig.port());
-    }
-
-    @Test
-    void tls() {
-        RelpConfig relpConfig = new RelpConfig("1234", "true", "keystoreExample", "truststoreExample");
-        Assertions.assertEquals("true", relpConfig.tls());
-    }
-
-    @Test
-    void tlsKeystorePassword() {
-        RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample");
-        Assertions.assertEquals("keystoreExample", relpConfig.tlsKeystorePassword());
-    }
-
-    @Test
-    void tlsTruststorePassword() {
-        RelpConfig relpConfig = new RelpConfig("1234", "false", "keystoreExample", "truststoreExample");
-        Assertions.assertEquals("truststoreExample", relpConfig.tlsTruststorePassword());
     }
 
     @Test
