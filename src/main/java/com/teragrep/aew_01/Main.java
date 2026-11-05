@@ -46,6 +46,7 @@
 package com.teragrep.aew_01;
 
 import com.azure.identity.ManagedIdentityCredentialBuilder;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.jmx.JmxReporter;
@@ -66,38 +67,17 @@ public class Main {
 
     // Start the server
     public static void main(String[] args) {
-        final MetricRegistry metricRegistry = new MetricRegistry();
+        // Load configurations
         final Sourceable configSource = ConfigSource.getConfigSource();
         final RelpConfig relpConfig = new RelpConfig(configSource);
         final TlsConfig tlsConfig = new TlsConfig(configSource);
         final AmqpConfig amqpConfig = new AmqpConfig(configSource);
         final MetricsConfig metricsConfig = new MetricsConfig(configSource);
-        final AmqpClient amqpClient;
-        if (Objects.equals(amqpConfig.connectionType(), "connectionString")) {
-            amqpClient = new AmqpClient(
-                    amqpConfig.connectionString(),
-                    amqpConfig.eventHubName(),
-                    metricRegistry.meter("amqpMeter")
-            );
-            LOGGER.info("amqpClient initialized using connection string");
-        }
-        else if (Objects.equals(amqpConfig.connectionType(), "passwordless")) {
-            amqpClient = new AmqpClient(
-                    new ManagedIdentityCredentialBuilder().clientId(amqpConfig.userManagedIdentityClientId()).build(),
-                    amqpConfig.eventHubName(),
-                    amqpConfig.namespaceName(),
-                    metricRegistry.meter("amqpMeter")
-            );
-            LOGGER.info("amqpClient initialized using passwordless connection");
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported connection type");
-        }
-        final SyslogProcessing syslogProcessing = new SyslogProcessing(amqpClient, metricRegistry.meter("relpMeter"));
-        final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
-        final String tls = tlsConfig.tls();
 
         // Initialize metrics and prometheus
+        final MetricRegistry metricRegistry = new MetricRegistry();
+        final Meter amqpMeter = metricRegistry.meter("amqpMeter");
+        final Meter relpMeter = metricRegistry.meter("relpMeter");
         final JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
         final Slf4jReporter slf4jReporter = Slf4jReporter
                 .forRegistry(metricRegistry)
@@ -114,6 +94,30 @@ public class Main {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        // Initialize AmqpClient
+        final AmqpClient amqpClient;
+        if (Objects.equals(amqpConfig.connectionType(), "connectionString")) {
+            amqpClient = new AmqpClient(amqpConfig.connectionString(), amqpConfig.eventHubName(), amqpMeter);
+            LOGGER.info("amqpClient initialized using connection string");
+        }
+        else if (Objects.equals(amqpConfig.connectionType(), "passwordless")) {
+            amqpClient = new AmqpClient(
+                    new ManagedIdentityCredentialBuilder().clientId(amqpConfig.userManagedIdentityClientId()).build(),
+                    amqpConfig.eventHubName(),
+                    amqpConfig.namespaceName(),
+                    amqpMeter
+            );
+            LOGGER.info("amqpClient initialized using passwordless connection");
+        }
+        else {
+            throw new IllegalArgumentException("Unsupported connection type");
+        }
+
+        // Initialize RELP server that sends received messages to EventHub via AmqpClient.
+        final SyslogProcessing syslogProcessing = new SyslogProcessing(amqpClient, relpMeter);
+        final RelpCommandConsumers relpCommandConsumers = new RelpCommandConsumers(syslogProcessing);
+        final String tls = tlsConfig.tls();
         // Initialize and run RelpServer with tls
         if (Boolean.parseBoolean(tls)) {
             try (
