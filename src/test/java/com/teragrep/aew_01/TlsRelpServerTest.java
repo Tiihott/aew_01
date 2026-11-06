@@ -57,6 +57,7 @@ import com.teragrep.rlp_03.frame.RelpFrameFactory;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEventOpen;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -120,7 +121,7 @@ public class TlsRelpServerTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
         final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new LoggingRelpEventOpen(new RelpEventOpen()));
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
         RelpEvent syslogRelpEvent = new RelpEvent() {
 
@@ -183,7 +184,7 @@ public class TlsRelpServerTest {
         Meter relpMeter = metricRegistry.meter("relpMeter");
 
         final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new LoggingRelpEventOpen(new RelpEventOpen()));
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
         RelpEvent syslogRelpEvent = new RelpEvent() {
 

@@ -48,6 +48,7 @@ package com.teragrep.aew_01;
 import com.teragrep.rlp_01.RelpCommand;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEvent;
 import com.teragrep.rlp_03.frame.delegate.event.RelpEventClose;
+import com.teragrep.rlp_03.frame.delegate.event.RelpEventOpen;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ public final class RelpCommandConsumers {
 
     public Map<String, RelpEvent> asMap() {
         final HashMap<String, RelpEvent> relpCommandConsumerMap = new HashMap<>();
-        relpCommandConsumerMap.put(RelpCommand.OPEN, new CustomRelpEventOpen());
+        relpCommandConsumerMap.put(RelpCommand.OPEN, new LoggingRelpEventOpen(new RelpEventOpen()));
         relpCommandConsumerMap.put(RelpCommand.CLOSE, new RelpEventClose());
         RelpEvent syslogRelpEvent = new SyslogRelpEvent(syslogProcessing);
         relpCommandConsumerMap.put(RelpCommand.SYSLOG, syslogRelpEvent);
